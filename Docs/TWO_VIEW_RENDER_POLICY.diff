@@ -1,0 +1,201 @@
+--- Dev/_orphaned/_legacy/two_view_render_policy_2026-01-22/TabLifecycleController.swift	2026-01-22 02:01:53
++++ RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Runtime/TabLifecycleController.swift	2026-01-22 02:17:34
+@@ -185,28 +185,46 @@
+ 
+         let decision = RenderBudgetPolicy.decide(input: policyInput, candidates: candidates)
+ 
+-        // Hard clamp:
+-        // - Overview => render budget 0 (snapshot-only)
+-        // - Normal   => only active primary + active secondary (if split)
+-        let allowedToRender: Set<UUID> = {
+-            if manager.state.isTabOverviewVisible { return [] }
+-            var allowed: Set<UUID> = []
+-            if manager.isSplitViewEnabled {
+-                if let left = manager.leftTabID { allowed.insert(left) }
+-                if let right = manager.rightTabID { allowed.insert(right) }
+-            } else {
+-                if let active = manager.activeTabID {
+-                    allowed.insert(active)
+-                } else if let selected = manager.currentSessionStore.selectedTabID {
+-                    allowed.insert(selected)
+-                }
++        // Safari-style strict 2-view policy:
++        // - Overview => 0 live webviews (snapshot-only)
++        // - Normal   => active + preview (if any), capped at 2
++        //
++        // "Preview" maps to the non-active split pane when split is enabled, or the
++        // transient binding target (if distinct) when split is disabled.
++        let isOverviewVisible = manager.state.isTabOverviewVisible
++
++        let activeTabCandidate: UUID? = manager.activeTabID ?? manager.currentSessionStore.selectedTabID
++        let activePaneTabID: UUID? = {
++            guard manager.isSplitViewEnabled else { return activeTabCandidate }
++            switch manager.activePane {
++            case .right:
++                return manager.rightTabID ?? activeTabCandidate
++            case .left:
++                return manager.leftTabID ?? activeTabCandidate
+             }
+-            if let bindingTabID { allowed.insert(bindingTabID) }
+-            return allowed
+         }()
+ 
+-        let keepSet = Set(decision.keepRendered).intersection(allowedToRender)
++        let previewTabID: UUID? = {
++            guard manager.isSplitViewEnabled else {
++                guard let bindingTabID, bindingTabID != activePaneTabID else { return nil }
++                return bindingTabID
++            }
++            let other: UUID? = (manager.activePane == .right) ? manager.leftTabID : manager.rightTabID
++            guard other != activePaneTabID else { return nil }
++            return other
++        }()
+ 
++        let desiredLiveTabIDs: [UUID] = {
++            guard isOverviewVisible == false else { return [] }
++            var ids: [UUID] = []
++            if let activePaneTabID { ids.append(activePaneTabID) }
++            if let previewTabID, previewTabID != activePaneTabID { ids.append(previewTabID) }
++            return Array(ids.prefix(2))
++        }()
++
++        let keepSet: Set<UUID> = Set(desiredLiveTabIDs).intersection(candidates)
++
++
+         // Update debug overlay (best-effort, DEBUG-only UI but model exists in all builds).
+         if DiagnosticsGate.isEnabled {
+             let summary: String = {
+@@ -214,9 +232,16 @@
+                 let live = manager.currentTabRegistry.aliveTabIDs
+                     .compactMap { id -> String? in
+                         guard let s = manager.state.tabs.first(where: { $0.id == id }) else { return nil }
+-                        if s.runtimeAttachment == .attached { return "L" }
+-                        if s.snapshotData != nil { return "S" }
+-                        return "U"
++                        switch s.renderMode {
++                        case .active:
++                            return "A"
++                        case .preview:
++                            return "P"
++                        case .frozen:
++                            return s.snapshotData != nil ? "S" : "F"
++                        case .discarded:
++                            return "D"
++                        }
+                     }
+                 // Example: tabs=30 live=2 [L,S,U,...]
+                 return "tabs=\(manager.state.tabs.count) live=\(WebViewPool.shared.liveWebViewCount)" + (live.isEmpty ? "" : " states=\(live.prefix(12).joined())")
+@@ -259,8 +284,21 @@
+ 
+         // 2) Ensure kept views are attached (best-effort, only for existing stores).
+         // Never activate new webviews while overview is visible.
+-        guard manager.state.isTabOverviewVisible == false else { return }
+-        for tabID in decision.keepRendered {
++        guard isOverviewVisible == false else {
++            manager.mutateState { state in
++                for idx in state.tabs.indices {
++                    let id = state.tabs[idx].id
++                    if state.tabs[idx].lifecycle == .discarded || state.tabs[idx].lifecycle == .closed {
++                        state.tabs[idx].renderMode = .discarded
++                    } else {
++                        state.tabs[idx].renderMode = .frozen
++                    }
++                }
++            }
++            return
++        }
++
++        for tabID in desiredLiveTabIDs {
+             guard keepSet.contains(tabID) else { continue }
+             guard let store = manager.currentTabRegistry.existingStore(for: tabID) else { continue }
+             guard store.webViewHandle == nil else { continue }
+@@ -277,6 +315,25 @@
+                 RuntimeMetrics.shared.increment(.webViewActivated)
+             }
+         }
++
++        // Update render modes (UI-facing) after enforcing the budget.
++        manager.mutateState { state in
++            for idx in state.tabs.indices {
++                let id = state.tabs[idx].id
++                if state.tabs[idx].lifecycle == .discarded || state.tabs[idx].lifecycle == .closed {
++                    state.tabs[idx].renderMode = .discarded
++                    continue
++                }
++
++                if id == activePaneTabID, keepSet.contains(id) {
++                    state.tabs[idx].renderMode = .active
++                } else if id == previewTabID, keepSet.contains(id) {
++                    state.tabs[idx].renderMode = .preview
++                } else {
++                    state.tabs[idx].renderMode = .frozen
++                }
++            }
++        }
+     }
+ 
+     @MainActor
+--- Dev/_orphaned/_legacy/two_view_render_policy_2026-01-22/TabState.swift	2026-01-22 02:01:53
++++ RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Engine/StateMachine/TabState.swift	2026-01-22 02:07:58
+@@ -6,6 +6,13 @@
+     case detached
+ }
+ 
++public enum TabRenderMode: String, Codable, Sendable {
++    case active
++    case preview
++    case frozen
++    case discarded
++}
++
+ public struct TabState: Identifiable, Codable, Equatable {
+     public let id: UUID
+     public var url: URL?
+@@ -20,6 +27,7 @@
+     public var isPrivate: Bool
+     public var lifecycle: TabLifecycleState
+     public var runtimeAttachment: RuntimeAttachmentState
++    public var renderMode: TabRenderMode
+ 
+     public struct ReaderState: Codable, Equatable {
+         public var isReaderAvailable: Bool
+@@ -44,6 +52,7 @@
+         isPrivate: Bool = false,
+         lifecycle: TabLifecycleState = .creating,
+         runtimeAttachment: RuntimeAttachmentState = .detached,
++        renderMode: TabRenderMode = .discarded,
+         reader: ReaderState = .init()
+     ) {
+         self.id = id
+@@ -56,6 +65,7 @@
+         self.isPrivate = isPrivate
+         self.lifecycle = lifecycle
+         self.runtimeAttachment = runtimeAttachment
++        self.renderMode = renderMode
+         self.reader = reader
+     }
+ 
+@@ -70,6 +80,7 @@
+         case isPrivate
+         case lifecycle
+         case runtimeAttachment
++        case renderMode
+         case reader
+     }
+ 
+@@ -86,6 +97,7 @@
+         self.isPrivate = try container.decodeIfPresent(Bool.self, forKey: .isPrivate) ?? false
+         self.lifecycle = try container.decodeIfPresent(TabLifecycleState.self, forKey: .lifecycle) ?? .creating
+         self.runtimeAttachment = try container.decodeIfPresent(RuntimeAttachmentState.self, forKey: .runtimeAttachment) ?? .detached
++        self.renderMode = try container.decodeIfPresent(TabRenderMode.self, forKey: .renderMode) ?? .discarded
+         self.reader = try container.decodeIfPresent(ReaderState.self, forKey: .reader) ?? .init()
+     }
+ 
+@@ -101,6 +113,7 @@
+         try container.encode(isPrivate, forKey: .isPrivate)
+         try container.encode(lifecycle, forKey: .lifecycle)
+         try container.encode(runtimeAttachment, forKey: .runtimeAttachment)
++        try container.encode(renderMode, forKey: .renderMode)
+         try container.encode(reader, forKey: .reader)
+     }
+ 

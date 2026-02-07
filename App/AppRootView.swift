@@ -1,5 +1,6 @@
 import SwiftUI
 import SafariLikeKit
+import SafariLikeKit
 import UIKit
 
 @MainActor

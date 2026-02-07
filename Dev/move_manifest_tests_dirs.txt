@@ -1,0 +1,15 @@
+BrowserCoreTests -> Dev/Tests/BrowserCoreTests
+Packages/BrowserCore/Tests -> Dev/Tests/Packages/BrowserCore/Tests
+Packages/BrowserCore/Tests/BrowserCoreTests -> Dev/Tests/Packages/BrowserCore/Tests/BrowserCoreTests
+Packages/BrowserCore/Tests/Tests -> Dev/Tests/Packages/BrowserCore/Tests/Tests
+Packages/SafariLikeContracts/Tests -> Dev/Tests/Packages/SafariLikeContracts/Tests
+Packages/SafariLikeCoreKit/Tests -> Dev/Tests/Packages/SafariLikeCoreKit/Tests
+Packages/SafariLikeCoreKit/Tests/SafariLikeCoreKitTests -> Dev/Tests/Packages/SafariLikeCoreKit/Tests/SafariLikeCoreKitTests
+Packages/SafariLikeCoreKit/Tests/Tests -> Dev/Tests/Packages/SafariLikeCoreKit/Tests/Tests
+Packages/SafariLikeKit/Tests -> Dev/Tests/Packages/SafariLikeKit/Tests
+Packages/SafariLikeUIKit/Tests -> Dev/Tests/Packages/SafariLikeUIKit/Tests
+Packages/SafariLikeUIKit/Tests/SafariLikeUIKitTests -> Dev/Tests/Packages/SafariLikeUIKit/Tests/SafariLikeUIKitTests
+Packages/SafariLikeUIKit/Tests/Tests -> Dev/Tests/Packages/SafariLikeUIKit/Tests/Tests
+Packages/SafariLikeUXKit/Tests -> Dev/Tests/Packages/SafariLikeUXKit/Tests
+SafariLikeCoreKitTests -> Dev/Tests/SafariLikeCoreKitTests
+SafariLikeUIKitTests -> Dev/Tests/SafariLikeUIKitTests

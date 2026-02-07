@@ -1,0 +1,6 @@
+import SafariLikeContracts
+
+public typealias NavigationReadContext = SafariLikeContracts.NavigationReadContext
+public typealias NavigationInterceptContext = SafariLikeContracts.NavigationInterceptContext
+public typealias ContentInjectContext = SafariLikeContracts.ContentInjectContext
+public typealias BrowserPluginContext = SafariLikeContracts.BrowserPluginContext

@@ -1,0 +1,330 @@
+# Phase 0 Scan Report
+
+Root: `/Users/iphone15pro/Downloads/webOS`
+
+## Zero-byte files (likely placeholders)
+- (none)
+
+## Duplicate files by content hash
+- DUP (4 files):
+  - Assets.xcassets/Contents.json
+  - Assets.xcassets/Shared/Contents.json
+  - Assets.xcassets/RuntimeOnly/Contents.json
+  - Assets.xcassets/DevOnly/Contents.json
+- DUP (2 files):
+  - RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Core/Constants/DefaultURLs.swift
+  - RuntimePackages/BrowserCore/Sources/BrowserCore/Core/Constants/DefaultURLs.swift
+
+## Swift type name collisions across modules
+- `DefaultURLs` defined in modules: BrowserCore, SafariLikeContracts, SafariLikeCoreKit, SafariLikeKit
+  - BrowserCore: typealias in RuntimePackages/BrowserCore/Sources/BrowserCore/Core/Constants/DefaultURLs.swift
+  - SafariLikeContracts: enum in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/DefaultURLs.swift
+  - SafariLikeCoreKit: typealias in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Core/Constants/DefaultURLs.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Public/DefaultURLs.swift
+- `State` defined in modules: BrowserCore, SafariLikeCoreKit, SafariLikeKit, SafariLikeUXKit
+  - BrowserCore: enum in RuntimePackages/BrowserCore/Sources/BrowserCore/Models/BrowserTab.swift
+  - SafariLikeCoreKit: enum in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Restore/UXRestoreController.swift
+  - SafariLikeCoreKit: enum in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/WebKit/Pool/WebViewPool.swift
+  - SafariLikeKit: struct in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Core/Library/InMemoryLibraryRepository.swift
+  - SafariLikeKit: enum in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Runtime/Lifecycle/AppLifecycleCoordinator.swift
+  - SafariLikeUXKit: enum in RuntimePackages/SafariLikeUXKit/Sources/SafariLikeUXKit/OverviewPhysicsEngine.swift
+  - SafariLikeUXKit: enum in RuntimePackages/SafariLikeUXKit/Sources/SafariLikeUXKit/StateMachines/ChromeStateMachine.swift
+- `CodingKeys` defined in modules: BrowserCore, SafariLikeContracts, SafariLikeKit
+  - BrowserCore: enum in RuntimePackages/BrowserCore/Sources/BrowserCore/Session/BrowserSessionStore.swift
+  - SafariLikeContracts: enum in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Journal/JournalEvent.swift
+  - SafariLikeContracts: enum in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Journal/JournalEvent.swift
+  - SafariLikeContracts: enum in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/WebsitePreferences/WebsitePreferences.swift
+  - SafariLikeKit: enum in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Engine/StateMachine/TabState.swift
+  - SafariLikeKit: enum in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Engine/StateMachine/WindowState.swift
+- `Decision` defined in modules: BrowserCore, SafariLikeCoreKit, SafariLikeKit
+  - BrowserCore: struct in RuntimePackages/BrowserCore/Sources/BrowserCore/Policy/TabDiscardPolicy.swift
+  - SafariLikeCoreKit: struct in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Policy/RenderBudgetPolicy.swift
+  - SafariLikeCoreKit: struct in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Policy/SceneRenderPolicy.swift
+  - SafariLikeKit: struct in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Core/TabResourcePolicy.swift
+- `Input` defined in modules: BrowserCore, SafariLikeCoreKit, SafariLikeKit
+  - BrowserCore: struct in RuntimePackages/BrowserCore/Sources/BrowserCore/Policy/TabDiscardPolicy.swift
+  - BrowserCore: struct in RuntimePackages/BrowserCore/Sources/BrowserCore/Policy/TabResourceScore.swift
+  - SafariLikeCoreKit: struct in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Policy/RenderBudgetPolicy.swift
+  - SafariLikeCoreKit: struct in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Policy/SceneRenderPolicy.swift
+  - SafariLikeKit: struct in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Core/TabResourcePolicy.swift
+- `JSONFileStoreActor` defined in modules: BrowserCore, SafariLikeContracts, SafariLikeKit
+  - BrowserCore: typealias in RuntimePackages/BrowserCore/Sources/BrowserCore/Persistence/JSONFileStoreActor.swift
+  - SafariLikeContracts: actor in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Persistence/JSONFileStoreActor.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Persistence/JSONFileStoreActor.swift
+- `Kind` defined in modules: SafariLikeContracts, SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeContracts: enum in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Journal/JournalEvent.swift
+  - SafariLikeCoreKit: enum in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Runtime/Navigation/URLStringNormalizer.swift
+  - SafariLikeKit: enum in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Metrics/MetricsEvent.swift
+- `PluginCapability` defined in modules: SafariLikeContracts, SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeContracts: enum in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Plugins/PluginCapability.swift
+  - SafariLikeCoreKit: typealias in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Plugins/PluginCapability.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Reexports/CoreKitReexports.swift
+- `PluginPermission` defined in modules: SafariLikeContracts, SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeContracts: enum in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Plugins/PluginPermission.swift
+  - SafariLikeCoreKit: typealias in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Plugins/PluginPermission.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Public/PluginContracts.swift
+- `TabGroupColor` defined in modules: BrowserCore, SafariLikeCoreKit, SafariLikeKit
+  - BrowserCore: enum in RuntimePackages/BrowserCore/Sources/BrowserCore/Models/BrowserTabGroup.swift
+  - SafariLikeCoreKit: enum in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Models/TabGroupColor.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Reexports/CoreKitReexports.swift
+- `TabState` defined in modules: BrowserCore, SafariLikeCoreKit, SafariLikeKit
+  - BrowserCore: struct in RuntimePackages/BrowserCore/Sources/BrowserCore/Session/SessionState.swift
+  - SafariLikeCoreKit: struct in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Public/TabState.swift
+  - SafariLikeKit: struct in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Engine/StateMachine/TabState.swift
+- `TabThumbnailProviding` defined in modules: BrowserCore, SafariLikeContracts, SafariLikeKit
+  - BrowserCore: typealias in RuntimePackages/BrowserCore/Sources/BrowserCore/Protocols/TabThumbnailProviding.swift
+  - SafariLikeContracts: protocol in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Thumbnails/TabThumbnailProviding.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Core/Protocols/TabThumbnailProviding.swift
+- `WebsitePreferences` defined in modules: BrowserCore, SafariLikeContracts, SafariLikeKit
+  - BrowserCore: typealias in RuntimePackages/BrowserCore/Sources/BrowserCore/Models/WebsitePreferences.swift
+  - SafariLikeContracts: struct in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/WebsitePreferences/WebsitePreferences.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Core/Models/WebsitePreferences.swift
+- `WebsitePreferencesProviding` defined in modules: BrowserCore, SafariLikeContracts, SafariLikeKit
+  - BrowserCore: typealias in RuntimePackages/BrowserCore/Sources/BrowserCore/Protocols/WebsitePreferencesProviding.swift
+  - SafariLikeContracts: protocol in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/WebsitePreferences/WebsitePreferencesProviding.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Core/Protocols/WebsitePreferencesProviding.swift
+- `ActivePane` defined in modules: BrowserCore, SafariLikeCoreKit
+  - BrowserCore: enum in RuntimePackages/BrowserCore/Sources/BrowserCore/Session/BrowserSessionStore.swift
+  - SafariLikeCoreKit: enum in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Policy/RenderBudgetPolicy.swift
+- `BrowserPlugin` defined in modules: SafariLikeContracts, SafariLikeKit
+  - SafariLikeContracts: protocol in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Plugins/BrowserPlugin.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Plugins/Core/BrowserPlugin.swift
+- `BrowserPluginContext` defined in modules: SafariLikeContracts, SafariLikeCoreKit
+  - SafariLikeContracts: protocol in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Plugins/PluginBoundaryContracts.swift
+  - SafariLikeCoreKit: typealias in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Plugins/NavigationReadContext.swift
+- `BrowserPluginContract` defined in modules: SafariLikeContracts, SafariLikeKit
+  - SafariLikeContracts: typealias in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Plugins/BrowserPlugin.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Plugins/Core/BrowserPlugin.swift
+- `BrowserSceneSession` defined in modules: SafariLikeKit, SafariLikeUIKit
+  - SafariLikeKit: class in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Core/Session/BrowserSceneSession.swift
+  - SafariLikeUIKit: typealias in RuntimePackages/SafariLikeUIKit/Sources/SafariLikeUIKit/SafariLikeConfiguration.swift
+- `BrowserSession` defined in modules: BrowserCore, SafariLikeKit
+  - BrowserCore: struct in RuntimePackages/BrowserCore/Sources/BrowserCore/Models/BrowserSession.swift
+  - SafariLikeKit: struct in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Session/BrowserSession.swift
+- `BrowserSessionStore` defined in modules: BrowserCore, SafariLikeKit
+  - BrowserCore: class in RuntimePackages/BrowserCore/Sources/BrowserCore/Session/BrowserSessionStore.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Core/Session/BrowserSessionStore.swift
+- `BrowserTab` defined in modules: BrowserCore, SafariLikeKit
+  - BrowserCore: struct in RuntimePackages/BrowserCore/Sources/BrowserCore/Models/BrowserTab.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Core/Models/BrowserTab.swift
+- `BrowserTabGroup` defined in modules: BrowserCore, SafariLikeKit
+  - BrowserCore: struct in RuntimePackages/BrowserCore/Sources/BrowserCore/Models/BrowserTabGroup.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Core/Models/BrowserTabGroup.swift
+- `CaretBlinkPolicy` defined in modules: SafariLikeKit, SafariLikeUXKit
+  - SafariLikeKit: enum in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Components/SelectableTextField.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Components/SelectableTextField.swift
+  - SafariLikeUXKit: enum in RuntimePackages/SafariLikeUXKit/Sources/SafariLikeUXKit/AddressBar/MicroInteractionConfig.swift
+- `ChromePolicy` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: struct in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/ChromePolicy.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Reexports/CoreKitReexports.swift
+- `CompanionItem` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: struct in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Models/CompanionModels.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Reexports/CoreKitReexports.swift
+- `Configuration` defined in modules: SafariLikeKit, SafariLikeUXKit
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Config/PublicAPI.swift
+  - SafariLikeKit: struct in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Core/Library/SQLiteLibraryRepository.swift
+  - SafariLikeKit: struct in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Metrics/MetricsCollector.swift
+  - SafariLikeUXKit: struct in RuntimePackages/SafariLikeUXKit/Sources/SafariLikeUXKit/OverviewPhysicsEngine.swift
+  - SafariLikeUXKit: struct in RuntimePackages/SafariLikeUXKit/Sources/SafariLikeUXKit/StateMachines/ChromeStateMachine.swift
+- `ContentBlockerList` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: enum in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Core/Protocols/ContentBlockingProviding.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Reexports/CoreKitReexports.swift
+- `ContentBlockingProviding` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: protocol in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Core/Protocols/ContentBlockingProviding.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Reexports/CoreKitReexports.swift
+- `ContentInjectContext` defined in modules: SafariLikeContracts, SafariLikeCoreKit
+  - SafariLikeContracts: protocol in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Plugins/PluginBoundaryContracts.swift
+  - SafariLikeCoreKit: typealias in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Plugins/NavigationReadContext.swift
+- `CrashGuard` defined in modules: App, SafariLikeKit
+  - App: typealias in App/Boot/CrashGuard.swift
+  - SafariLikeKit: class in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Runtime/Crash/CrashGuard.swift
+- `CrashRecoveryView` defined in modules: App, SafariLikeKit
+  - App: typealias in App/Boot/CrashGuard.swift
+  - SafariLikeKit: struct in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Runtime/Crash/CrashGuard.swift
+- `Diagnostics` defined in modules: Dev, SafariLikeCoreKit
+  - Dev: struct in Dev/Diagnostics/Diagnostics.swift
+  - SafariLikeCoreKit: struct in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Diagnostics/Diagnostics.swift
+- `Event` defined in modules: SafariLikeKit, SafariLikeUXKit
+  - SafariLikeKit: enum in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Metrics/Tracing/PerformanceTracer.swift
+  - SafariLikeUXKit: enum in RuntimePackages/SafariLikeUXKit/Sources/SafariLikeUXKit/AddressBar/AddressBarEntryStateMachine.swift
+  - SafariLikeUXKit: enum in RuntimePackages/SafariLikeUXKit/Sources/SafariLikeUXKit/StateMachines/ChromeStateMachine.swift
+- `InjectionTiming` defined in modules: SafariLikeContracts, SafariLikeCoreKit
+  - SafariLikeContracts: enum in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Plugins/InjectionTiming.swift
+  - SafariLikeCoreKit: typealias in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Plugins/InjectionTiming.swift
+- `InterceptionResponse` defined in modules: SafariLikeContracts, SafariLikeCoreKit
+  - SafariLikeContracts: enum in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Plugins/NavigationTypes.swift
+  - SafariLikeCoreKit: typealias in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Plugins/NavigationTypes.swift
+- `Item` defined in modules: BrowserCore, SafariLikeCoreKit
+  - BrowserCore: struct in RuntimePackages/BrowserCore/Sources/BrowserCore/Session/SessionState.swift
+  - SafariLikeCoreKit: struct in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Runtime/Tab/TabWebStore.swift
+- `Key` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: struct in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/WebKit/Context/WebContextManager.swift
+  - SafariLikeKit: struct in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Lifecycle/WatchdogController.swift
+- `MemoryPressureEvent` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: enum in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Engine/EngineController.swift
+  - SafariLikeCoreKit: enum in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Protocols/MemoryPressureNotifying.swift
+  - SafariLikeKit: struct in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Metrics/BrowserMetrics.swift
+- `MemoryPressureLevel` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: enum in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Engine/EngineController.swift
+  - SafariLikeKit: enum in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Core/TabResourcePolicy.swift
+  - SafariLikeKit: enum in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Metrics/MetricsEvent.swift
+- `Mode` defined in modules: BrowserCore, SafariLikeUXKit
+  - BrowserCore: enum in RuntimePackages/BrowserCore/Sources/BrowserCore/Session/Restore/ReplayErrorPolicy.swift
+  - SafariLikeUXKit: enum in RuntimePackages/SafariLikeUXKit/Sources/SafariLikeUXKit/AddressBar/AddressBarEntryStateMachine.swift
+- `NavigationContext` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: struct in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Policy/PolicyTypes.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Reexports/CoreKitReexports.swift
+- `NavigationEvent` defined in modules: SafariLikeContracts, SafariLikeCoreKit
+  - SafariLikeContracts: enum in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Plugins/NavigationTypes.swift
+  - SafariLikeCoreKit: typealias in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Plugins/NavigationTypes.swift
+- `NavigationInterceptContext` defined in modules: SafariLikeContracts, SafariLikeCoreKit
+  - SafariLikeContracts: protocol in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Plugins/PluginBoundaryContracts.swift
+  - SafariLikeCoreKit: typealias in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Plugins/NavigationReadContext.swift
+- `NavigationPolicy` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: struct in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Policy/SafariNavigationPolicyLayer.swift
+  - SafariLikeKit: struct in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Runtime/Policy/CorePolicies/NavigationPolicy.swift
+- `NavigationReadContext` defined in modules: SafariLikeContracts, SafariLikeCoreKit
+  - SafariLikeContracts: protocol in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Plugins/PluginBoundaryContracts.swift
+  - SafariLikeCoreKit: typealias in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Plugins/NavigationReadContext.swift
+- `NavigationRequest` defined in modules: SafariLikeContracts, SafariLikeCoreKit
+  - SafariLikeContracts: struct in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Plugins/NavigationTypes.swift
+  - SafariLikeCoreKit: typealias in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Plugins/NavigationTypes.swift
+- `NavigationType` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: enum in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Policy/PolicyTypes.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Reexports/CoreKitReexports.swift
+- `PaneID` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: enum in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/WebKit/Heuristics/WebContextRouter.swift
+  - SafariLikeKit: enum in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Runtime/SplitPane/SplitPaneTypes.swift
+- `PaneState` defined in modules: BrowserCore, SafariLikeKit
+  - BrowserCore: struct in RuntimePackages/BrowserCore/Sources/BrowserCore/Session/SessionState.swift
+  - SafariLikeKit: struct in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Runtime/SplitPane/SplitPaneTypes.swift
+- `PluginDescriptor` defined in modules: SafariLikeContracts, SafariLikeKit
+  - SafariLikeContracts: struct in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Plugins/PluginDescriptor.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Plugins/Core/PluginDescriptor.swift
+- `PluginError` defined in modules: SafariLikeContracts, SafariLikeCoreKit
+  - SafariLikeContracts: enum in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Plugins/PluginError.swift
+  - SafariLikeCoreKit: typealias in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Plugins/PluginError.swift
+- `PluginKind` defined in modules: SafariLikeContracts, SafariLikeKit
+  - SafariLikeContracts: enum in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Plugins/PluginDescriptor.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Plugins/Core/PluginDescriptor.swift
+- `PluginLifecycleState` defined in modules: SafariLikeContracts, SafariLikeKit
+  - SafariLikeContracts: enum in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Plugins/PluginDescriptor.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Plugins/Core/PluginLifecycle.swift
+- `PluginManifest` defined in modules: SafariLikeContracts, SafariLikeCoreKit
+  - SafariLikeContracts: struct in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Plugins/PluginManifest.swift
+  - SafariLikeCoreKit: typealias in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Plugins/PluginContracts.swift
+- `PolicyCenter` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: actor in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Policy/PolicyCenter.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Reexports/CoreKitReexports.swift
+- `PolicyDecision` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: enum in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Policy/PolicyTypes.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Reexports/CoreKitReexports.swift
+- `PolicyEvent` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: struct in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Policy/PolicyCenter.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Reexports/CoreKitReexports.swift
+- `PolicyMutation` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: struct in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Policy/PolicyTypes.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Reexports/CoreKitReexports.swift
+- `PolicyProviderKind` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: enum in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Policy/PolicyCenter.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Reexports/CoreKitReexports.swift
+- `PolicyProviding` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: protocol in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Policy/PolicyCenter.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Reexports/CoreKitReexports.swift
+- `PrivacyContext` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: struct in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Policy/PolicyTypes.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Reexports/CoreKitReexports.swift
+- `PrivacyOperation` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: enum in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Policy/PolicyTypes.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Reexports/CoreKitReexports.swift
+- `RelatedLinkExtractor` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: enum in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Runtime/Related/RelatedLinkExtractor.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Reexports/CoreKitReexports.swift
+- `ResourceContext` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: struct in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Policy/PolicyTypes.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Reexports/CoreKitReexports.swift
+- `ResourceType` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: enum in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Policy/PolicyTypes.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Reexports/CoreKitReexports.swift
+- `SafariLikeBrowserView` defined in modules: SafariLikeKit, SafariLikeUIKit
+  - SafariLikeKit: struct in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/SafariLikeBrowserView.swift
+  - SafariLikeUIKit: typealias in RuntimePackages/SafariLikeUIKit/Sources/SafariLikeUIKit/SafariLikeBrowserView.swift
+- `SafariLikeConfiguration` defined in modules: SafariLikeKit, SafariLikeUIKit
+  - SafariLikeKit: struct in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Config/SafariLikeConfiguration.swift
+  - SafariLikeUIKit: typealias in RuntimePackages/SafariLikeUIKit/Sources/SafariLikeUIKit/SafariLikeConfiguration.swift
+- `SafariLikeUIKitHost` defined in modules: SafariLikeKit, SafariLikeUIKit
+  - SafariLikeKit: enum in Dev/_orphaned/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Platform/SafariLikeUIKitHost.swift
+  - SafariLikeUIKit: enum in RuntimePackages/SafariLikeUIKit/Sources/SafariLikeUIKit/SafariLikeUIKitHost.swift
+- `SessionJournalEvent` defined in modules: BrowserCore, SafariLikeContracts
+  - BrowserCore: typealias in RuntimePackages/BrowserCore/Sources/BrowserCore/Session/Journal/SessionJournal.swift
+  - SafariLikeContracts: typealias in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Journal/JournalEvent.swift
+- `SessionJournalEventType` defined in modules: BrowserCore, SafariLikeContracts
+  - BrowserCore: typealias in RuntimePackages/BrowserCore/Sources/BrowserCore/Session/Journal/SessionJournal.swift
+  - SafariLikeContracts: typealias in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Journal/JournalEvent.swift
+- `SidebarContent` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: enum in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/WindowSession/SidebarMode.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/ViewModel/SplitBrowser/SplitBrowserUIState.swift
+- `Snapshot` defined in modules: SafariLikeKit, SafariLikeUXKit
+  - SafariLikeKit: struct in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Runtime/Scene/SceneMetricsReader.swift
+  - SafariLikeUXKit: struct in RuntimePackages/SafariLikeUXKit/Sources/SafariLikeUXKit/AddressBar/AddressBarEntryStateMachine.swift
+- `SnapshotService` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: class in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/WebKit/Snapshot/SnapshotService.swift
+  - SafariLikeKit: class in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Runtime/Snapshots/SnapshotService.swift
+- `SplitMode` defined in modules: SafariLikeKit, SafariLikeUIKit
+  - SafariLikeKit: enum in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Runtime/SplitPane/SplitPaneTypes.swift
+  - SafariLikeUIKit: enum in RuntimePackages/SafariLikeUIKit/Sources/SafariLikeUIKit/SplitPaneCoordinator.swift
+- `SplitPaneCoordinator` defined in modules: SafariLikeKit, SafariLikeUIKit
+  - SafariLikeKit: class in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Runtime/SplitPane/SplitPaneCoordinator.swift
+  - SafariLikeUIKit: class in RuntimePackages/SafariLikeUIKit/Sources/SafariLikeUIKit/SplitPaneCoordinator.swift
+- `SyntheticResponse` defined in modules: SafariLikeContracts, SafariLikeCoreKit
+  - SafariLikeContracts: struct in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Plugins/SyntheticResponse.swift
+  - SafariLikeCoreKit: typealias in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Plugins/SyntheticResponse.swift
+- `Tab` defined in modules: BrowserCore, SafariLikeCoreKit
+  - BrowserCore: typealias in RuntimePackages/BrowserCore/Sources/BrowserCore/Models/BrowserTab.swift
+  - SafariLikeCoreKit: typealias in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Models/TabModel.swift
+  - SafariLikeCoreKit: typealias in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Public/BrowserEngine.swift
+- `TabDescriptor` defined in modules: BrowserCore, SafariLikeKit
+  - BrowserCore: struct in RuntimePackages/BrowserCore/Sources/BrowserCore/Policy/TabDiscardPolicy.swift
+  - SafariLikeKit: struct in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Core/TabResourcePolicy.swift
+- `TabDiscardPolicy` defined in modules: BrowserCore, SafariLikeKit
+  - BrowserCore: struct in RuntimePackages/BrowserCore/Sources/BrowserCore/Policy/TabDiscardPolicy.swift
+  - SafariLikeKit: struct in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Runtime/Discard/TabDiscardPolicy.swift
+- `TabManager` defined in modules: App, SafariLikeKit
+  - App: class in App/AppBrowserSessionController.swift
+  - SafariLikeKit: class in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Runtime/TabManager/TabManager.swift
+- `TabWebStoreState` defined in modules: BrowserCore, SafariLikeCoreKit
+  - BrowserCore: struct in RuntimePackages/BrowserCore/Sources/BrowserCore/Web/TabWebStoreState.swift
+  - SafariLikeCoreKit: typealias in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Runtime/Tab/TabWebStoreState.swift
+- `Timing` defined in modules: SafariLikeContracts, SafariLikeCoreKit
+  - SafariLikeContracts: enum in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Plugins/PluginManifest.swift
+  - SafariLikeCoreKit: enum in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Runtime/Timing/TimingPolicy.swift
+- `UIKitMemoryPressureSource` defined in modules: SafariLikeKit, SafariLikeUIKit
+  - SafariLikeKit: class in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Runtime/Memory/UIKitMemoryPressureSource.swift
+  - SafariLikeUIKit: class in RuntimePackages/SafariLikeUIKit/Sources/SafariLikeUIKit/Composition/UIKitMemoryPressureSource.swift
+- `UserAgentMode` defined in modules: SafariLikeContracts, SafariLikeKit
+  - SafariLikeContracts: enum in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/WebsitePreferences/WebsitePreferences.swift
+  - SafariLikeKit: enum in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Plugins/Core/BrowserSettingsSnapshot.swift
+- `WebNavigator` defined in modules: BrowserCore, SafariLikeCoreKit
+  - BrowserCore: protocol in RuntimePackages/BrowserCore/Sources/BrowserCore/Web/WebNavigator.swift
+  - SafariLikeCoreKit: typealias in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Public/WebNavigator.swift
+- `WebPermissionKind` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: enum in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Platform/Web/WebPermissionPrompt.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Public/WebPermissionPrompts.swift
+- `WebPermissionPromptDecision` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: enum in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Platform/Web/WebPermissionPrompt.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Public/WebPermissionPrompts.swift
+- `WebPermissionPromptRequest` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: struct in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Platform/Web/WebPermissionPrompt.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Public/WebPermissionPrompts.swift
+- `WebPermissionPromptResponse` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: struct in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Platform/Web/WebPermissionPrompt.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Public/WebPermissionPrompts.swift
+- `WebViewConfigurationFactory` defined in modules: SafariLikeCoreKit, SafariLikeKit
+  - SafariLikeCoreKit: class in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Platform/Web/WebViewConfigurationFactory.swift
+  - SafariLikeKit: typealias in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Reexports/CoreKitReexports.swift
+- `WebsitePreferencesApplying` defined in modules: SafariLikeContracts, SafariLikeCoreKit
+  - SafariLikeContracts: protocol in RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/WebsitePreferences/WebsitePreferencesApplying.swift
+  - SafariLikeCoreKit: typealias in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/WebsitePreferences/WebsitePreferencesApplying.swift
+- `WindowState` defined in modules: BrowserCore, SafariLikeKit
+  - BrowserCore: struct in RuntimePackages/BrowserCore/Sources/BrowserCore/Session/SessionState.swift
+  - SafariLikeKit: struct in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Engine/StateMachine/WindowState.swift

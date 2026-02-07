@@ -1,10 +1,10 @@
 #if DEBUG
 import SwiftUI
 
+import SafariLikeKit
 struct SceneMetricsTestHookView: View {
 
     @ObservedObject var sceneMetrics: SceneMetrics
-
     var body: some View {
         let s = sceneMetrics.stableInsets
         // Keep the label stable and parseable for UI tests.

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+ "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+
+    <!-- ========================= -->
+    <!-- App Identity -->
+    <!-- ========================= -->
+
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+
+    <key>CFBundleName</key>
+    <string>$(PRODUCT_NAME)</string>
+
+    <key>CFBundleDisplayName</key>
+    <string>webOS</string>
+
+    <key>CFBundleShortVersionString</key>
+    <string>$(MARKETING_VERSION)</string>
+
+    <key>CFBundleVersion</key>
+    <string>$(CURRENT_PROJECT_VERSION)</string>
+
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+
+    <!-- ========================= -->
+    <!-- Network / ATS -->
+    <!-- ========================= -->
+
+    <!-- Allow HTTP for local networking only (e.g. localhost / 127.* / LAN dev hosts). -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsLocalNetworking</key>
+        <true/>
+    </dict>
+
+    <!-- แนะนำให้คุม theme ให้เสถียรเหมือน Safari (ถ้าต้องการตามระบบให้ลบคีย์นี้ออก) -->
+    <key>UIUserInterfaceStyle</key>
+    <string>Light</string>
+
+    <!-- ========================= -->
+    <!-- Orientation -->
+    <!-- ========================= -->
+
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+
+    <!-- ========================= -->
+    <!-- Status Bar / Safe Area -->
+    <!-- ========================= -->
+
+    <!-- คุม status bar ผ่าน UIKit / SceneDelegate -->
+    <key>UIViewControllerBasedStatusBarAppearance</key>
+    <false/>
+
+    <!-- ========================= -->
+    <!-- Scene / Multi Window -->
+    <!-- ========================= -->
+
+    <!--
+    NOTE: This app uses the SwiftUI App lifecycle (@main). Do not provide an incomplete
+    UIApplicationSceneManifest here; iOS can abort during launch if UISceneConfigurations
+    are missing required keys (e.g. UISceneDelegateClassName / storyboard).
+
+    If you later switch back to a UIKit scene delegate-driven lifecycle, re-add a complete
+    UIApplicationSceneManifest and ensure delegate class names match real types.
+    -->
+
+    <!-- ========================= -->
+    <!-- Input / Pointer -->
+    <!-- ========================= -->
+
+    <key>UIApplicationSupportsIndirectInputEvents</key>
+    <true/>
+
+	<!-- Live Activities (Dynamic Island) -->
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+
+    <!-- ========================= -->
+    <!-- Plugins (SafariLikeKit) -->
+    <!-- ========================= -->
+
+    <!-- Optional allowlist for plugins that may be registered/loaded at runtime. -->
+    <!-- If absent, all compiled-in built-ins are registered. -->
+    <key>SafariLikeEnabledPluginIDs</key>
+    <array>
+        <string>com.safarilike.adblocker</string>
+        <string>com.safarilike.darkmode</string>
+        <string>com.safarilike.analytics</string>
+    </array>
+
+</dict>
+</plist>

@@ -1,0 +1,93 @@
+[
+  {
+    "trigger": {
+      "url-filter": ".*",
+      "resource-type": ["script", "image", "raw"],
+      "if-domain": ["*googletagmanager.com", "*googletagservices.com", "*doubleclick.net", "*googlesyndication.com", "*googleadservices.com", "*amazon-adsystem.com", "*adsystem.amazon.com", "*criteo.com", "*criteo.net", "*outbrain.com", "*taboola.com", "*yieldmo.com", "*pubmatic.com", "*openx.net", "*appnexus.com", "*thetradedesk.com", "*media.net", "*contextweb.com"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*googletagmanager\\.com/gtag.*",
+      "resource-type": ["script"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*criteo\\.com.*",
+      "resource-type": ["script", "image", "raw"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*outbrain\\.com.*",
+      "resource-type": ["script", "image"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*taboola\\.com.*",
+      "resource-type": ["script", "image"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*pubmatic\\.com.*",
+      "resource-type": ["script", "raw"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*openx\\.net.*",
+      "resource-type": ["script", "raw"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*appnexus\\.com.*",
+      "resource-type": ["script", "raw"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*thetradedesk\\.com.*",
+      "resource-type": ["script", "raw"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*media\\.net.*",
+      "resource-type": ["script", "raw"]
+    },
+    "action": {
+      "type": "block"
+    }
+  }
+]

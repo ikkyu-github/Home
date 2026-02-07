@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Fail fast if any build artifacts/logs/caches are present.
+"$ROOT_DIR/Scripts/repo_guard.sh"
+
+# Fail fast if any Swift Package contains build artifacts/compiled outputs.
+"$ROOT_DIR/Dev/Tools/Scripts/validate_swift_packages.sh"
+
+# Prevent archived/legacy code from being accidentally added to build phases.
+"$ROOT_DIR/Dev/Tools/check-archive-leaks.sh"

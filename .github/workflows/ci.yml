@@ -1,0 +1,23 @@
+name: CI
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Forbidden files check
+        run: bash Dev/Tools/Scripts/forbidden_files_check.sh
+      - name: Lint
+        run: swiftlint --strict
+      - name: Fail on static shared (SafariLikeKit/CoreKit)
+        run: |
+          grep -r "static let shared" RuntimePackages/SafariLikeKit RuntimePackages/SafariLikeCoreKit | grep -v 'WHITELISTED_CONSTANT' && exit 1 || true
+      - name: Fail on WebKit import in forbidden layers
+        run: |
+          grep -r "import WebKit" RuntimePackages/BrowserCore RuntimePackages/SafariLikeContracts RuntimePackages/SafariLikeUXKit | grep -v 'WHITELISTED' && exit 1 || true
+      - name: Build & Test
+        run: xcodebuild -scheme webOS -destination 'platform=iOS Simulator,name=iPad Pro (12.9-inch) (6th generation)' test

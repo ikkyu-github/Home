@@ -1,0 +1,94 @@
+[
+  {
+    "trigger": {
+      "url-filter": ".*",
+      "resource-type": ["image", "style-sheet", "script", "font"],
+      "if-domain": ["*doubleclick.net", "*googlesyndication.com", "*googleadservices.com", "*googletagmanager.com", "*googletagservices.com", "*amazon-adsystem.com", "*facebook.com", "*facebook.net", "*connect.facebook.net", "*adsystem.amazon.com", "*adsystem.facebook.com"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*",
+      "resource-type": ["script"],
+      "if-domain": ["*adsystem.amazon.com", "*amazon-adsystem.com", "*doubleclick.net", "*googlesyndication.com", "*googleadservices.com", "*googletagmanager.com", "*googletagservices.com"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*googletagmanager\\.com.*",
+      "resource-type": ["script"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*google-analytics\\.com.*",
+      "resource-type": ["script", "image", "raw"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*googletagservices\\.com.*",
+      "resource-type": ["script"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*doubleclick\\.net.*",
+      "resource-type": ["script", "image"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*googlesyndication\\.com.*",
+      "resource-type": ["script", "image"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*facebook\\.com/tr.*",
+      "resource-type": ["script", "image", "raw"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*connect\\.facebook\\.net.*",
+      "resource-type": ["script"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*adsystem\\.facebook\\.com.*",
+      "resource-type": ["script", "image"]
+    },
+    "action": {
+      "type": "block"
+    }
+  }
+]

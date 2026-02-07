@@ -68,7 +68,7 @@ internal struct SplitBrowserRootView: View {
     private var sceneDrivenContent: some View {
         // Use scene-sourced stable values to avoid transient geometry glitches during rotation.
         let size = (sceneMetrics.stableSize != .zero) ? sceneMetrics.stableSize : UIScreen.main.bounds.size
-        let browserRootWidth = size.width
+        _ = size.width
 
         let insetsUI = (sceneMetrics.stableInsets != .zero) ? sceneMetrics.stableInsets : UIEdgeInsets.zero
         let insets = EdgeInsets(top: insetsUI.top, leading: insetsUI.left, bottom: insetsUI.bottom, trailing: insetsUI.right)
@@ -88,7 +88,7 @@ internal struct SplitBrowserRootView: View {
             userPreference: .automatic
         )
             let isLandscape = layoutResolution.isLandscape
-            let isLandscapeSplit = layoutResolution.isSplit
+            _ = layoutResolution.isSplit
             let chromeStyle: BrowserChromeStyle = isLandscape ? .padLandscapeSafari : .phonePortraitSafari
             let isLandscapeForRelated = isLandscape
 
@@ -375,8 +375,8 @@ internal struct SplitBrowserRootView: View {
     }
 
     private func notifyRootViewAppeared() {
-        // UI-first restore: activate WKWebView(s) only after the root UI is on-screen.
-        LifecycleCoordinator.shared.handleBrowserRuntimeEvent(.rootViewAppeared, viewModel: vm)
+        // UI-first restore: activate web views only after the root UI is on-screen.
+        vm.notifyRootViewAppeared()
     }
 
     // MARK: - 🔥 FIX จุดที่ทำให้ Sidebar "กดแล้วไม่เกิดอะไร"

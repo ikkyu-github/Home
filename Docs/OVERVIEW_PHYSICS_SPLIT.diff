@@ -1,0 +1,189 @@
+### TabOverviewTransitionController.swift
+--- Dev/_orphaned/_legacy/overview_physics_split_2026-01-22/TabOverviewTransitionController.swift	2026-01-22 01:47:41
++++ RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Runtime/TabOverviewTransitionController.swift	2026-01-22 01:49:02
+@@ -99,27 +99,29 @@
+     }
+ 
+     func updateDrag(source: Source, translation: CGFloat, predictedEndTranslation: CGFloat) {
+-        let distance = max(1, physics.overview.openDistance)
+-
+-        // Map drag to a signed progress delta, depending on source.
+-        let deltaProgress: CGFloat = {
++        let engineSource: OverviewPhysicsEngine.TransitionSource = {
+             switch source {
+             case .overlay:
+-                // Dragging down should close: positive translation decreases progress.
+-                return -translation / distance
++                return .overlay
+             case .chrome(let isTopChrome):
+-                // Top chrome: drag down opens (positive). Bottom chrome: drag up opens.
+-                let signed = isTopChrome ? translation : -translation
+-                return signed / distance
++                return .chrome(isTopChrome: isTopChrome)
+             }
+         }()
+ 
+-        // Ignore dead zone noise when starting from rest.
+-        if abs(translation) < physics.overview.deadZone {
++        guard let out = OverviewPhysicsEngine.updateDrag(
++            .init(
++                source: engineSource,
++                translation: translation,
++                predictedEndTranslation: predictedEndTranslation,
++                openDistance: physics.overview.openDistance,
++                deadZone: physics.overview.deadZone,
++                currentProgress: presentationProgress
++            )
++        ) else {
+             return
+         }
+ 
+-        let next = min(1, max(0, presentationProgress + deltaProgress))
++        let next = out.nextProgress
+         withAnimation(.none) {
+             targetProgress = next
+         }
+@@ -127,7 +129,7 @@
+         updateDebugLabel(reason: "updateDrag")
+ 
+         // Keep the VM-visible flag conservative: only keep it false when truly closed.
+-        if next > 0.001 {
++        if out.shouldForceVisible {
+             isVisibleBinding?.wrappedValue = true
+         }
+ 
+@@ -138,18 +140,26 @@
+     func endDrag(source: Source, translation: CGFloat, predictedEndTranslation: CGFloat) {
+         isDragging = false
+ 
+-        let distance = max(1, physics.overview.openDistance)
+-        let projectedProgress: CGFloat = {
++        let engineSource: OverviewPhysicsEngine.TransitionSource = {
+             switch source {
+             case .overlay:
+-                // Projected close gesture: down should reduce progress.
+-                return min(1, max(0, presentationProgress + (-predictedEndTranslation / distance)))
++                return .overlay
+             case .chrome(let isTopChrome):
+-                let signed = isTopChrome ? predictedEndTranslation : -predictedEndTranslation
+-                return min(1, max(0, presentationProgress + (signed / distance)))
++                return .chrome(isTopChrome: isTopChrome)
+             }
+         }()
+ 
++        let projectedProgress = OverviewPhysicsEngine.endDrag(
++            .init(
++                source: engineSource,
++                translation: translation,
++                predictedEndTranslation: predictedEndTranslation,
++                openDistance: physics.overview.openDistance,
++                deadZone: physics.overview.deadZone,
++                currentProgress: presentationProgress
++            )
++        ).projectedProgress
++
+         let target = machine.decideTarget(currentProgress: presentationProgress, projectedProgress: projectedProgress)
+         settle(to: target, updateVisible: true)
+ 
+
+### TabOverviewView.swift
+--- Dev/_orphaned/_legacy/overview_physics_split_2026-01-22/TabOverviewView.swift	2026-01-22 01:47:41
++++ RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Tabs/TabOverviewView.swift	2026-01-22 01:49:52
+@@ -60,15 +60,24 @@
+                 : proxy.safeAreaInsets
+             let safeWidth = max(0, size.width - safe.leading - safe.trailing)
+ 
+-            let nextCols = policy.columns(containerWidth: safeWidth, previous: stableColumns)
+-            let cardSize = policy.cardSize(containerWidth: safeWidth, columns: nextCols)
++            let layout = OverviewPhysicsEngine.resolveLayout(
++                .init(
++                    containerWidth: safeWidth,
++                    presentationProgress: overviewProgress,
++                    previousColumns: stableColumns,
++                    policy: policy
++                )
++            )
++
++            let nextCols = layout.columns
++            let cardSize = layout.cardSize
+             let sectionInsets = EdgeInsets(
+-                top: policy.sectionInsets.top,
+-                leading: policy.sectionInsets.leading,
+-                bottom: policy.sectionInsets.bottom,
+-                trailing: policy.sectionInsets.trailing
++                top: layout.sectionInsets.top,
++                leading: layout.sectionInsets.leading,
++                bottom: layout.sectionInsets.bottom,
++                trailing: layout.sectionInsets.trailing
+             )
+-            let scale = policy.scaleCurve.scale(progress: overviewProgress)
++            let scale = layout.scale
+ 
+             VStack(spacing: 0) {
+                 header(safeTop: safe.top)
+@@ -95,10 +104,10 @@
+                     }
+                     .simultaneousGesture(overviewInteractionGesture)
+                 } else {
+-                    let gridItems = Array(repeating: GridItem(.fixed(cardSize.width), spacing: policy.interCardSpacing, alignment: .top), count: max(1, nextCols))
++                    let gridItems = Array(repeating: GridItem(.fixed(cardSize.width), spacing: layout.interCardSpacing, alignment: .top), count: max(1, nextCols))
+ 
+                     ScrollView {
+-                        LazyVGrid(columns: gridItems, spacing: policy.interCardSpacing) {
++                        LazyVGrid(columns: gridItems, spacing: layout.interCardSpacing) {
+                             ForEach(tabs) { tab in
+                                 TabCard(
+                                     tab: tab,
+@@ -125,10 +134,24 @@
+             }
+             .scaleEffect(scale)
+             .onAppear {
+-                stableColumns = policy.columns(containerWidth: safeWidth, previous: nil)
++                stableColumns = OverviewPhysicsEngine.resolveLayout(
++                    .init(
++                        containerWidth: safeWidth,
++                        presentationProgress: overviewProgress,
++                        previousColumns: nil,
++                        policy: policy
++                    )
++                ).columns
+             }
+             .onChange(of: safeWidth) { newWidth in
+-                stableColumns = policy.columns(containerWidth: newWidth, previous: stableColumns)
++                stableColumns = OverviewPhysicsEngine.resolveLayout(
++                    .init(
++                        containerWidth: newWidth,
++                        presentationProgress: overviewProgress,
++                        previousColumns: stableColumns,
++                        policy: policy
++                    )
++                ).columns
+             }
+         }
+         .onAppear {
+
+### SafariTabOverviewTransform.swift
+--- Dev/_orphaned/_legacy/overview_physics_split_2026-01-22/SafariTabOverviewTransform.swift	2026-01-22 01:47:41
++++ RuntimePackages/SafariLikeUXKit/Sources/SafariLikeUXKit/Overview/SafariTabOverviewTransform.swift	2026-01-22 01:48:25
+@@ -10,15 +10,13 @@
+     }
+ 
+     public func body(content: Content) -> some View {
+-        let p = max(0, min(1, progress))
+-        let minScale: CGFloat = isLandscapeSplit ? 0.90 : 0.86
+-        let scale = 1 - (1 - minScale) * p
+-        let lift: CGFloat = isLandscapeSplit ? -26 * p : -44 * p
+-        let opacity: Double = 1 - 0.18 * Double(p)
++        let out = OverviewPhysicsEngine.overviewTransform(
++            .init(progress: progress, isLandscapeSplit: isLandscapeSplit)
++        )
+         return content
+-            .scaleEffect(scale, anchor: .center)
+-            .offset(y: lift)
+-            .opacity(opacity)
++            .scaleEffect(out.scale, anchor: .center)
++            .offset(y: out.liftY)
++            .opacity(out.opacity)
+     }
+ }
+ 

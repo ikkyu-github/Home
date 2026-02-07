@@ -23,13 +23,16 @@ public final class WebContext: ObservableObject {
     public let websiteDataStore: WKWebsiteDataStore
     public let contentController: WKUserContentController
     public let configuration: WKWebViewConfiguration
-    public let webView: WKWebView
+    public private(set) var webView: WKWebView?
 
     @Published public var renderState: WebRenderState = .suspended
 
     private let configurationCustomizer: (@MainActor (WKWebViewConfiguration) -> Void)?
 
-    /// Designated initializer: a WebContext owns its WKWebView lifecycle.
+    /// Designated initializer: a WebContext owns its configuration and privacy separation.
+    ///
+    /// WKWebView construction is intentionally delegated to `WebViewPool` to enforce
+    /// budgeting and centralize ownership tracking.
     ///
     /// - Important: `configuration.processPool` will be overwritten with this context's pool
     ///   to prevent accidental cross-pane sharing.
@@ -60,7 +63,8 @@ public final class WebContext: ObservableObject {
         self.configuration.processPool = processPool
         configurationCustomizer?(self.configuration)
 
-        self.webView = WKWebView(frame: .zero, configuration: self.configuration)
+        // Do not create WKWebView here. It will be created lazily by WebViewPool.
+        self.webView = nil
     }
 
     /// Convenience initializer used by runtime layers.
@@ -84,9 +88,28 @@ public final class WebContext: ObservableObject {
         configuration
     }
 
+    /// Lazily create (or return) the WKWebView for this context.
+    ///
+    /// - Important: The caller must ensure the web view is created via `WebViewPool`.
+    @MainActor
+    public func ensureWebViewCreated(_ factory: () -> WKWebView) -> WKWebView {
+        if let webView {
+            return webView
+        }
+        let created = factory()
+        self.webView = created
+        return created
+    }
+
+    /// Drop the attached WKWebView so it can be recreated by the pool.
+    @MainActor
+    public func discardAttachedWebViewForReparenting() {
+        self.webView = nil
+    }
+
     @MainActor
     public func ensureInitialLoad() {
-        let webView = self.webView
+        guard let webView = self.webView else { return }
         guard webView.url == nil else { return }
 
         let url = URL(string: "https://www.google.com")!

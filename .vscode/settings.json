@@ -1,0 +1,30 @@
+{
+    "sourcekit-lsp.disable": true,
+    "swift.sourcekit-lsp.disable": true,
+    "sourcekit-lsp.serverArguments": ["--scratch-path", "/var/tmp/webOS/SourceKitLSP"],
+    "swift.sourcekit-lsp.serverArguments": ["--scratch-path", "/var/tmp/webOS/SourceKitLSP"],
+    "swift.sourcekit-lsp.backgroundIndexing": false,
+    "swift.buildPath": "/var/tmp/webOS/SwiftVSCodeBuild",
+    "editor.tokenColorCustomizations": {
+        "textMateRules": [
+            {
+                "scope": "googletest.failed",
+                "settings": {
+                    "foreground": "#f00"
+                }
+            },
+            {
+                "scope": "googletest.passed",
+                "settings": {
+                    "foreground": "#0f0"
+                }
+            },
+            {
+                "scope": "googletest.run",
+                "settings": {
+                    "foreground": "#0f0"
+                }
+            }
+        ]
+    }
+}

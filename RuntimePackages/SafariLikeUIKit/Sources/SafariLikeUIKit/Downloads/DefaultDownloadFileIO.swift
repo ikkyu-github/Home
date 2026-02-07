@@ -1,0 +1,3 @@
+import SafariLikeKit
+
+public typealias DefaultDownloadFileIO = SafariLikeKit.DefaultDownloadFileIO

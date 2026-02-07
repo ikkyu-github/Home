@@ -1,0 +1,119 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Export Clean Project (No Bloat)",
+			"type": "shell",
+			"command": "${workspaceFolder}/Dev/Tools/Scripts/export_clean_zip.sh",
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "swift build BrowserCore",
+			"command": "${workspaceFolder}/Dev/Tools/Scripts/spm.sh RuntimePackages/BrowserCore build",
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "swift build SafariLikeCoreKit",
+			"type": "shell",
+			"command": "${workspaceFolder}/Dev/Tools/Scripts/spm.sh RuntimePackages/SafariLikeCoreKit build",
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "swift test BrowserCore",
+			"type": "shell",
+			"command": "${workspaceFolder}/Dev/Tools/Scripts/spm.sh RuntimePackages/BrowserCore test",
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "xcodebuild -list",
+			"type": "shell",
+			"command": "xcodebuild -project webOS.xcodeproj -list",
+			"problemMatcher": []
+		},
+		{
+			"label": "xcodebuild webOS (iOS Simulator)",
+			"type": "shell",
+			"command": "${workspaceFolder}/Dev/Tools/Scripts/xcodebuild.sh --tail 80 build",
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "xcodebuild webOS tail",
+			"type": "shell",
+			"command": "${workspaceFolder}/Dev/Tools/Scripts/xcodebuild.sh --tail 30 build",
+			"problemMatcher": []
+		},
+		{
+			"label": "xcodebuild webOS capture log",
+			"type": "shell",
+			"command": "${workspaceFolder}/Dev/Tools/Scripts/xcodebuild.sh --tail 120 build",
+			"problemMatcher": []
+		},
+		{
+			"label": "xcodebuild webOS write workspace log",
+			"type": "shell",
+			"command": "${workspaceFolder}/Dev/Tools/Scripts/xcodebuild.sh --tail 120 build",
+			"problemMatcher": []
+		},
+		{
+			"label": "wc webos_build.log",
+			"type": "shell",
+			"command": "${workspaceFolder}/Dev/Tools/Scripts/xcodebuild.sh --tail 80 --print-log-path",
+			"problemMatcher": []
+		},
+		{
+			"label": "xcodebuild webOS (log refresh)",
+			"type": "shell",
+			"command": "${workspaceFolder}/Dev/Tools/Scripts/xcodebuild.sh --tail 0 build >/dev/null",
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "xcodebuild webOS (quick build)",
+			"type": "shell",
+			"command": "${workspaceFolder}/Dev/Tools/Scripts/xcodebuild.sh --tail 20 build",
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "xcodebuild webOS log (workspace)",
+			"type": "shell",
+			"command": "${workspaceFolder}/Dev/Tools/Scripts/xcodebuild.sh --tail 80 build",
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Check xcodebuild warnings (log)",
+			"type": "shell",
+			"command": "set -euo pipefail\nLOG=\"$HOME/Library/Logs/webOS/xcodebuild-webOS.log\"\necho \"[log] $LOG\"\nif grep -n -i \"Product BrowserCore cannot weak-link framework AppIntents.framework\" \"$LOG\"; then\n  echo \"FAIL: weak-link warning still present\"\n  exit 2\nelse\n  echo \"ok: weak-link warning not present\"\nfi\nwarn_count=$(grep -ci \"warning:\" \"$LOG\" || true)\necho \"warning count: $warn_count\"\nif [[ \"$warn_count\" != \"0\" ]]; then\n  echo \"First warnings (up to 20):\"\n  (grep -n -i \"warning:\" \"$LOG\" | head -n 20) || true\nfi\n"
+		},
+		{
+			"label": "Run repo_guard",
+			"type": "shell",
+			"command": "bash Scripts/repo_guard.sh",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Remove xcuserdata",
+			"type": "shell",
+			"command": "rm -rf webOS.xcodeproj/xcuserdata webOS.xcodeproj/project.xcworkspace/xcuserdata",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Run repo_guard",
+			"type": "shell",
+			"command": "bash Scripts/repo_guard.sh",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		}
+	]
+}

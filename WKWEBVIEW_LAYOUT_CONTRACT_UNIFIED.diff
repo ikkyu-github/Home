@@ -1,0 +1,1677 @@
+diff --git a/RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Runtime/Tab/TabWebStore.swift b/RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Runtime/Tab/TabWebStore.swift
+index efd967e..f335e6a 100644
+--- a/RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Runtime/Tab/TabWebStore.swift
++++ b/RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Runtime/Tab/TabWebStore.swift
+@@ -1,4 +1,5 @@
+ import Foundation
++import Combine
+ import WebKit
+ import os
+ import BrowserCore
+@@ -50,6 +51,18 @@ public final class TabWebStore: NSObject {
+         #else
+         private let debugLogEnabled = false
+         #endif
++
++    // MARK: - Scene-scoped services (must not be global singletons)
++    private var webContextManager: WebContextManager
++    private var webContextRouter: WebContextRouter
++
++    // MARK: - Optional BrowserCore services (injected by TabRegistry)
++    internal let siteSettingsStore: SiteSettingsStore?
++    internal let formFillPolicyEngine: FormFillPolicyEngine?
++    internal let userScriptStore: UserScriptStore?
++
++    // MARK: - User scripts runtime bookkeeping
++    internal var lastAppliedUserScriptsFingerprint: UInt64?
+     // MARK: - App State Abstraction
+     /// Closure to check if app is active, settable from UI layer. Defaults to always true.
+     var isAppActiveClosure: (() -> Bool)?
+@@ -72,6 +85,12 @@ public final class TabWebStore: NSObject {
+     public private(set) var webContext: WebContext?
+ 
+     public let uxRestoreController = UXRestoreController()
++    private let webViewRealitySubject = CurrentValueSubject<WebViewRealitySnapshot?, Never>(nil)
++
++    /// Convenience surface used by SafariLikeKit read paths.
++    public var webViewReality: WebViewRealitySnapshot? {
++        webViewRealitySubject.value
++    }
+     internal var pageTitle: String = ""
+     internal var currentURL: URL?
+     internal var canGoBack: Bool = false
+@@ -84,6 +103,10 @@ public final class TabWebStore: NSObject {
+     /// Timestamp set on didStartProvisionalNavigation for load time estimation.
+     internal var navigationStartAt: Date?
+ 
++    /// Staged URL string that should be loaded once a WebView is attached and ready.
++    /// Owned/consumed by `TabNavigationController`.
++    internal var pendingResolvedURLString: String?
++
+     /// Threading: Read on the main actor.
+     public var state: TabWebStoreState {
+         TabWebStoreState(
+@@ -98,6 +121,51 @@ public final class TabWebStore: NSObject {
+ 
+     internal var stateObservers: [UUID: @MainActor (TabWebStoreState) -> Void] = [:]
+ 
++    // MARK: - Performance tier / budgeting hints
++    internal var performanceTier: TabPriority = .foreground
++
++    /// UI/runtime-facing performance tier used by SafariLikeKit.
++    ///
++    /// This is intentionally a finer-grained signal than `TabPriority`.
++    public enum WebViewPerformanceTier: Sendable, Equatable {
++        case foreground
++        case backgroundVisible
++        case backgroundHidden
++    }
++
++    internal private(set) var webViewPerformanceTier: WebViewPerformanceTier = .foreground
++
++    public func setPerformanceTier(_ tier: WebViewPerformanceTier) {
++        webViewPerformanceTier = tier
++        switch tier {
++        case .foreground:
++            performanceTier = .foreground
++        case .backgroundVisible, .backgroundHidden:
++            performanceTier = .background
++        }
++    }
++
++    // MARK: - Lightweight restore state (kept even when WebView is discarded)
++    public struct RestoreState: Sendable, Equatable {
++        public var currentURL: URL?
++        public var lastKnownTitle: String?
++
++        public init(currentURL: URL?, lastKnownTitle: String?) {
++            self.currentURL = currentURL
++            self.lastKnownTitle = lastKnownTitle
++        }
++    }
++
++    internal private(set) var restoreState: RestoreState?
++
++    internal func updateRestoreState(currentURL: URL?, lastKnownTitle: String?) {
++        if currentURL == nil && lastKnownTitle == nil {
++            restoreState = nil
++        } else {
++            restoreState = RestoreState(currentURL: currentURL, lastKnownTitle: lastKnownTitle)
++        }
++    }
++
+     /// Minimal, synchronous cleanup for owner deinit. Do not call WebKit APIs here.
+     internal func invalidateForOwnerDeinit() {
+         if isInvalidated { return }
+@@ -148,6 +216,22 @@ public final class TabWebStore: NSObject {
+     internal private(set) var currentContextRoute: WebContextRoute = .paneDefault
+ 
+     private var attachedWebViewPool: WebViewPool?
++
++    // MARK: - Activation gate (owned by TabRegistry)
++    private var activationAllowedGate: (() -> Bool)?
++
++    public func setActivationAllowedGate(_ gate: @escaping () -> Bool) {
++        activationAllowedGate = gate
++    }
++
++    private func isActivationAllowed() -> Bool {
++        activationAllowedGate?() ?? true
++    }
++
++    // MARK: - Controllers
++    internal lazy var navigationController: TabNavigationController = TabNavigationController(store: self)
++    internal lazy var contentBlockingController: TabContentBlockingController = TabContentBlockingController(store: self)
++    internal lazy var processRecoveryController: TabProcessRecoveryController = TabProcessRecoveryController(store: self)
+     // MARK: - UI Callbacks (bridged from UI layer)
+     public var onWebViewBecameFirstResponder: (() -> Void)?
+     public var isAccessoryEnabled: (() -> Bool)?
+@@ -181,6 +265,9 @@ public final class TabWebStore: NSObject {
+     /// This is the canonical hook for session journaling of navigation commits.
+     public var onNavigationCommitted: ((URL?) -> Void)?
+ 
++    /// Emitted when a navigation fails (provisional/committed/termination).
++    public var onNavigationFailure: ((NavigationFailureRecord) -> Void)?
++
+     // MARK: - Internal
+     internal var companionTask: Task<Void, Never>?
+     internal var pendingProcessRecoverTask: Task<Void, Never>?
+@@ -207,6 +294,7 @@ public final class TabWebStore: NSObject {
+     internal let contentBlockerManager: (any ContentBlockingProviding)?
+     internal weak var websitePreferencesProvider: (any WebsitePreferencesProviding)?
+     internal var pendingWebPermissionDecisions: [UUID: (WKPermissionDecision) -> Void] = [:]
++    internal var pendingWebPermissionRequests: [UUID: (host: String, kind: WebPermissionKind)] = [:]
+     internal var webPermissionPromptObserver: NSObjectProtocol?
+     internal let logger = Logger(subsystem: "SafariLikeKit", category: "TabWebStore")
+     private let defaultSearchEngineURL: URL
+@@ -226,8 +314,13 @@ public final class TabWebStore: NSObject {
+         searchEngineURL: URL = DefaultURLs.SearchEngine.googleQuery,
+         contentBlockerManager: (any ContentBlockingProviding)? = nil,
+         websitePreferencesProvider: (any WebsitePreferencesProviding)? = nil,
++        siteSettingsStore: SiteSettingsStore? = nil,
++        formFillPolicyEngine: FormFillPolicyEngine? = nil,
++        userScriptStore: UserScriptStore? = nil,
+         browsingProfile: BrowsingProfile = .regular,
+-        configFactory: WebViewConfigurationFactory
++        configFactory: WebViewConfigurationFactory,
++        webContextManager: WebContextManager,
++        webContextRouter: WebContextRouter
+     ) {
+         self.tabID = tabID
+         self.windowID = windowID
+@@ -238,8 +331,14 @@ public final class TabWebStore: NSObject {
+         self._searchEngineURL = searchEngineURL
+         self.contentBlockerManager = contentBlockerManager
+         self.websitePreferencesProvider = websitePreferencesProvider
++        self.siteSettingsStore = siteSettingsStore
++        self.formFillPolicyEngine = formFillPolicyEngine
++        self.userScriptStore = userScriptStore
+         self.configFactory = configFactory
+ 
++        self.webContextManager = webContextManager
++        self.webContextRouter = webContextRouter
++
+         // Do not create WKWebView at init. Will be created lazily when tab is activated/visible.
+         self.webView = nil
+         self.webViewHandle = nil
+@@ -257,14 +356,37 @@ public final class TabWebStore: NSObject {
+         super.init()
+     }
+ 
++    /// Inject/refresh scene-scoped WebContext services.
++    ///
++    /// Threading: Call on the main actor.
++    public func setWebContextServices(manager: WebContextManager, router: WebContextRouter) {
++        self.webContextManager = manager
++        self.webContextRouter = router
++    }
++
+     /// Threading: Call on the main actor.
+     public func activate() async {
+-        await activate(using: attachedWebViewPool)
++        guard isActivationAllowed() else {
++            Diagnostics.logError(
++                "[TabWebStore] activate() suppressed by activation gate. tabID=\(tabID)",
++                subsystem: .runtime,
++                category: "TabLifecycle"
++            )
++            return
++        }
++        guard let pool = attachedWebViewPool else {
++            Diagnostics.logError(
++                "[TabWebStore] activate() called without an attached WebViewPool. Use TabRegistry.activatedStore(...) to activate. tabID=\(tabID)",
++                subsystem: .runtime,
++                category: "TabLifecycle"
++            )
++            return
++        }
++        await activate(using: pool)
+     }
+ 
+     /// Threading: Call on the main actor.
+-    public func activate(using pool: WebViewPool? = nil) async {
+-        let pool = pool ?? .shared
++    public func activate(using pool: WebViewPool) async {
+         // Lazily create WKWebView only when tab is activated/visible
+         if webView == nil {
+             uxRestoreController.markRestoring()
+@@ -279,13 +401,13 @@ public final class TabWebStore: NSObject {
+                 navigationType: .other,
+                 sourceURL: nil
+             )
+-            let route = await WebContextRouter.shared.routeContext(
++            let route = await webContextRouter.routeContext(
+                 for: navCtx,
+                 paneID: PaneID(rawValue: paneID) ?? .primary,
+                 privacyMode: privacyMode
+             )
+             currentContextRoute = route
+-            let context = WebContextManager.shared.context(
++            let context = webContextManager.context(
+                 windowID: windowID,
+                 paneID: paneID,
+                 tabID: tabID,
+@@ -335,7 +457,13 @@ public final class TabWebStore: NSObject {
+         // Downgrade render state before detaching and nil-ing references.
+         self.webContext?.renderState = .suspended
+ 
+-        let pool = attachedWebViewPool ?? .shared
++        guard let pool = attachedWebViewPool else {
++            // Nothing to release; store is either already torn down or was never activated.
++            self.webView = nil
++            self.webViewHandle = nil
++            self.webContext = nil
++            return
++        }
+         switch releaseMode {
+         case .warm:
+             pool.releaseTab(tabID)
+@@ -345,7 +473,7 @@ public final class TabWebStore: NSObject {
+         self.webView = nil
+         self.webViewHandle = nil
+         self.webContext = nil
+-        WebContextManager.shared.tearDownContext(windowID: windowID, paneID: paneID, tabID: tabID)
++        webContextManager.tearDownContext(windowID: windowID, paneID: paneID, tabID: tabID)
+     }
+ 
+     /// Detach the WKWebView aggressively.
+@@ -370,8 +498,28 @@ public final class TabWebStore: NSObject {
+     /// Note: This does not enforce any global budgeting; callers should
+     /// apply a policy at a higher layer.
+     public func ensureWebViewAttached() async {
++        guard isActivationAllowed() else { return }
+         guard webViewHandle == nil else { return }
+-        await activate(using: attachedWebViewPool)
++        guard let pool = attachedWebViewPool else {
++            Diagnostics.logError(
++                "[TabWebStore] ensureWebViewAttached called without an attached WebViewPool. Use TabRegistry.activatedStore(...) to activate. tabID=\(tabID)",
++                subsystem: .runtime,
++                category: "TabLifecycle"
++            )
++            return
++        }
++        await activate(using: pool)
++    }
++
++    // MARK: - Detach / discard helpers (called by TabRegistry)
++    public func detachWebViewForBackground() {
++        performanceTier = .background
++        deactivate()
++    }
++
++    public func discardWebView() {
++        performanceTier = .discarded
++        deactivateCold()
+     }
+ 
+     /// Evict the `WKWebView` if it exists.
+@@ -412,8 +560,9 @@ public final class TabWebStore: NSObject {
+         teardownObservers()
+ 
+         // 4) Release WKWebView via pool bookkeeping.
+-        let pool = attachedWebViewPool ?? .shared
+-        pool.invalidateTab(tabID)
++        if let pool = attachedWebViewPool {
++            pool.invalidateTab(tabID)
++        }
+ 
+         // 3) Fully tear down the WKWebView core.
+         invalidateWebViewCore()
+@@ -430,6 +579,7 @@ public final class TabWebStore: NSObject {
+         onDownloadDidFinish = nil
+         onDownloadDidFail = nil
+         onDownloadRequested = nil
++        onNavigationFailure = nil
+         isAppActiveClosure = nil
+         
+         // 6) Finally, clear state observers so no more callbacks are delivered.
+@@ -440,6 +590,8 @@ public final class TabWebStore: NSObject {
+             webPermissionPromptObserver = nil
+         }
+         pendingWebPermissionDecisions.removeAll()
++        pendingWebPermissionRequests.removeAll()
++        pendingResolvedURLString = nil
+     }
+ 
+     /// Minimal, synchronous cleanup for deinit only. Do not touch actor-isolated or async state here.
+@@ -481,6 +633,10 @@ public final class TabWebStore: NSObject {
+         updateCanGoForward(false)
+         updateEstimatedProgress(0.0)
+         updateIsLoading(false)
++
++        pendingResolvedURLString = nil
++        pendingWebPermissionDecisions.removeAll()
++        pendingWebPermissionRequests.removeAll()
+     }
+ 
+     // Move deinit to the end of the class, just before the closing brace
+@@ -559,3 +715,26 @@ extension TabWebStore {
+         companionTask = nil
+     }
+ }
++
++// MARK: - WebViewRealityCoordinating
++extension TabWebStore: WebViewRealityCoordinating {
++    public func updateReality(_ snapshot: WebViewRealitySnapshot) {
++        webViewRealitySubject.send(snapshot)
++    }
++
++    public var webViewRealityPublisher: AnyPublisher<WebViewRealitySnapshot?, Never> {
++        webViewRealitySubject.eraseToAnyPublisher()
++    }
++
++    public var uxRestoreStatePublisher: AnyPublisher<UXRestoreController.State, Never> {
++        uxRestoreController.$state.eraseToAnyPublisher()
++    }
++
++    public var currentWebViewReality: WebViewRealitySnapshot? {
++        webViewRealitySubject.value
++    }
++
++    public var currentUXRestoreState: UXRestoreController.State {
++        uxRestoreController.state
++    }
++}
+diff --git a/RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/WebKit/Context/WebContext.swift b/RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/WebKit/Context/WebContext.swift
+index 5078779..5aa9913 100644
+--- a/RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/WebKit/Context/WebContext.swift
++++ b/RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/WebKit/Context/WebContext.swift
+@@ -23,7 +23,7 @@ public final class WebContext: ObservableObject {
+     public let websiteDataStore: WKWebsiteDataStore
+     public let contentController: WKUserContentController
+     public let configuration: WKWebViewConfiguration
+-    public let webView: WKWebView
++    public private(set) var webView: WKWebView?
+ 
+     @Published public var renderState: WebRenderState = .suspended
+ 
+@@ -60,7 +60,7 @@ public final class WebContext: ObservableObject {
+         self.configuration.processPool = processPool
+         configurationCustomizer?(self.configuration)
+ 
+-        self.webView = WKWebView(frame: .zero, configuration: self.configuration)
++        self.webView = nil
+     }
+ 
+     /// Convenience initializer used by runtime layers.
+@@ -84,10 +84,29 @@ public final class WebContext: ObservableObject {
+         configuration
+     }
+ 
++    /// Lazily create (or return) the context's WebView.
++    ///
++    /// - Important: The factory closure must be the *only* place a `WKWebView` is constructed.
++    ///   In this repo, that is enforced by `WebViewPool.makeWebView(configuration:)`.
++    @MainActor
++    public func ensureWebViewCreated(_ factory: @MainActor () -> WKWebView) -> WKWebView {
++        if let webView {
++            return webView
++        }
++        let created = factory()
++        webView = created
++        return created
++    }
++
++    /// Discard the currently attached WebView so it can be recreated and reparented deterministically.
++    @MainActor
++    public func discardAttachedWebViewForReparenting() {
++        webView = nil
++    }
++
+     @MainActor
+     public func ensureInitialLoad() {
+-        let webView = self.webView
+-        guard webView.url == nil else { return }
++        guard let webView, webView.url == nil else { return }
+ 
+         let url = URL(string: "https://www.google.com")!
+         let request = URLRequest(url: url)
+diff --git a/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Runtime/TabRuntime/TabCoordinator.swift b/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Runtime/TabRuntime/TabCoordinator.swift
+index 03dade2..c70a41b 100644
+--- a/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Runtime/TabRuntime/TabCoordinator.swift
++++ b/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Runtime/TabRuntime/TabCoordinator.swift
+@@ -1,4 +1,3 @@
+-import BrowserCore
+ import Foundation
+ import SafariLikeCoreKit
+ 
+@@ -122,7 +121,9 @@ final class TabCoordinator {
+ 
+             store.onWebInputFocused = { [weak self] in self?.manager?.onWebInputFocused?() }
+             store.onDownloadRequested = { [weak self] request, response in
+-                self?.manager?.downloadStore.startDownload(request: request, response: response)
++                guard let manager = self?.manager else { return }
++                let profile: BrowsingProfile = manager.isPrivateMode ? .private : .regular
++                manager.downloadStore.startDownload(sceneID: manager.windowID, profile: profile, request: request, response: response)
+             }
+             store.onDownloadDecideDestination = { [weak self] (_, _, filename) in
+                 self?.manager?.downloadStore.makeDestinationURL(for: filename)
+@@ -134,7 +135,7 @@ final class TabCoordinator {
+             store.onPolicyDecisionEvent = { [weak self] event in
+                 guard let manager = self?.manager else { return }
+                 manager.onJournalEvent?(event)
+-                NavigationPolicyOverlayModel.shared.record(journalEvent: event)
++                manager.runtimeContextIfAvailable?.navigationPolicyOverlayModel.record(journalEvent: event)
+             }
+ 
+             store.onNavigationCommitted = { [weak self] url in
+diff --git a/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Layout/SplitBrowserRootView.swift b/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Layout/SplitBrowserRootView.swift
+index da88577..b39644e 100644
+--- a/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Layout/SplitBrowserRootView.swift
++++ b/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Layout/SplitBrowserRootView.swift
+@@ -50,9 +50,9 @@ internal struct SplitBrowserRootView: View {
+ 
+     private var rootView: some View {
+         sceneDrivenContent
+-        .ignoresSafeArea()
+         .environmentObject(chrome)
+         .environmentObject(tabOverviewTransition)
++        .environmentObject(renderPolicy)
+         .sheet(isPresented: $chrome.isAppSettingsPresented) {
+             if let makeSettingsView {
+                 makeSettingsView()
+@@ -139,7 +139,6 @@ internal struct SplitBrowserRootView: View {
+                 // Never animate lane geometry.
+                 txn.animation = nil
+             }
+-            .ignoresSafeArea()
+             .environment(\.isLayoutStabilizing, layoutStabilizer.isStabilizing)
+     #if DEBUG
+             .navigationPolicyOverlay()
+@@ -375,8 +374,8 @@ internal struct SplitBrowserRootView: View {
+     }
+ 
+     private func notifyRootViewAppeared() {
+-        // UI-first restore: activate WKWebView(s) only after the root UI is on-screen.
+-        LifecycleCoordinator.shared.handleBrowserRuntimeEvent(.rootViewAppeared, viewModel: vm)
++        // UI-first restore: activate web views only after the root UI is on-screen.
++        vm.notifyRootViewAppeared()
+     }
+ 
+     // MARK: - 🔥 FIX จุดที่ทำให้ Sidebar "กดแล้วไม่เกิดอะไร"
+diff --git a/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Layout/WebContentLane.swift b/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Layout/WebContentLane.swift
+index ed7437b..850a545 100644
+--- a/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Layout/WebContentLane.swift
++++ b/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Layout/WebContentLane.swift
+@@ -13,7 +13,8 @@ internal struct WebContentLane: View {
+ 
+     var body: some View {
+         BrowserPaneView(viewModel: vm, webContext: webContext)
+-            .ignoresSafeArea(.all)
++            // Safari-grade contract: Web canvas must not underlap bottom chrome.
++            // Bottom chrome reserves real space via `safeAreaInset(edge: .bottom)`.
+             .transaction { txn in
+                 // Never animate the WebView lane.
+                 txn.animation = nil
+diff --git a/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Layout/LandscapeBrowserLayout.swift b/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Layout/LandscapeBrowserLayout.swift
+new file mode 100644
+index 0000000..37321b9
+--- /dev/null
++++ b/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Layout/LandscapeBrowserLayout.swift
+@@ -0,0 +1,207 @@
++import SwiftUI
++import SafariLikeCoreKit
++import SafariLikeUXKit
++typealias SidebarItem = SidebarView.Item
++/// Helper view to set chrome height limits
++private struct SetChromeLimits: View {
++    let minHeight: CGFloat
++    let maxHeight: CGFloat
++    @EnvironmentObject var chrome: BrowserChromeState
++    var body: some View {
++        Color.clear
++            .allowsHitTesting(false)
++            .onAppear {
++                chrome.minChromeHeight = minHeight
++                chrome.maxChromeHeight = maxHeight
++            }
++    }
++}
++internal struct LandscapeBrowserLayout: View {
++    @ObservedObject var vm: SplitBrowserViewModel
++    let configuration: SafariLikeConfiguration
++    let chromeStyle: BrowserChromeStyle
++    let containerSize: CGSize
++    let safeAreaInsets: EdgeInsets
++    let browserRootWidth: CGFloat
++    let onSidebarSelect: (SidebarItem) -> Void
++    @EnvironmentObject private var chrome: BrowserChromeState
++    @Environment(\.isLayoutStabilizing) private var isLayoutStabilizing
++    private var activeTabState: BrowserTab.State? {
++        let id = vm.activeTabID ?? vm.sessionStore.selectedTabID
++        guard let id else { return nil }
++        return vm.sessionStore.tabs.first(where: { $0.id == id })?.state
++    }
++    var body: some View {
++        let headerHeight = SafariHeaderView.height(for: chromeStyle)
++        let shouldShowWebContent = vm.shouldShowWebContentForActiveTab
++        let safeWidth: CGFloat = max(0, containerSize.width - safeAreaInsets.leading - safeAreaInsets.trailing)
++        #if DEBUG
++        // HARD DEBUG (ห้ามลบ): in landscape, WebView must always get full safe width.
++        let contentWidth: CGFloat = safeWidth
++        let safeW = String(format: "%.1f", safeWidth)
++        let contentW = String(format: "%.1f", contentWidth)
++        let sidebarW = String(format: "%.1f", 0)
++        let hardLayoutLogLine =
++            "[HARD][LAYOUT] MODE=landscape " +
++            "sidebarVisible=\(vm.isSidebarVisible) " +
++            "SAFE=\(safeW) " +
++            "CONTENT=\(contentW) " +
++            "SIDEBAR=\(sidebarW)" // ห้ามลบ
++        #endif
++        // Layout contract: do not ignore safe areas for web/content containers.
++        // Content already lives inside safe areas, so avoid adding extra manual padding.
++        let contentLeadingSafe: CGFloat = 0
++        let contentTrailingSafe: CGFloat = 0
++        let contentTopSafe: CGFloat = 0
++        let contentBottomSafe: CGFloat = 0
++        let base = ZStack(alignment: .topLeading) {
++            // MARK: - Main Content Area (header moves together with WebView)
++            VStack(spacing: 0) {
++                SafariHeaderView(
++                    vm: vm,
++                    style: chromeStyle,
++                    topBarMode: .interactive,
++                    leadingSafeAreaPadding: contentLeadingSafe,
++                    trailingSafeAreaPadding: contentTrailingSafe
++                )
++                .frame(height: headerHeight)
++                .zIndex(1000)
++                TabRenderer(
++                    tabState: activeTabState,
++                    preferWebContent: shouldShowWebContent,
++                    startPage: {
++                        StartPageLandscapeView(
++                            bookmarkStore: vm.bookmarkStore,
++                            leadingSafePadding: contentLeadingSafe,
++                            trailingSafePadding: contentTrailingSafe,
++                            onOpenURLString: { urlString in
++                                vm.send(.openURLString(urlString))
++                            }
++                        )
++                        .frame(maxWidth: .infinity, maxHeight: .infinity)
++                    },
++                    web: {
++                        ZStack {
++                            if let handle = vm.activeWebViewHandleForRendering {
++                                LandscapeWebPane(
++                                    webViewHandle: handle,
++                                    vm: vm,
++                                    chromeStyle: chromeStyle,
++                                    contentLeadingSafe: contentLeadingSafe,
++                                    contentTrailingSafe: contentTrailingSafe,
++                                    contentTopSafe: contentTopSafe,
++                                    contentBottomSafe: contentBottomSafe,
++                                    headerHeight: headerHeight
++                                )
++                            } else if vm.sessionStore.tabs.isEmpty {
++                                EmptyBrowserPane(onNewTab: { vm.newTab() })
++                            } else {
++                                // White page is acceptable while attaching.
++                                Color(.systemBackground)
++                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
++                            }
++                        }
++                        .overlay {
++                            // Launching overlay: must not replace the WebView and must not animate chrome.
++                            if shouldShowWebContent == false, (vm.activeWebViewHandleForRendering?.isAlive != true) {
++                                LaunchingBrowserPane(title: "Launching…", subtitle: "Attaching WebView")
++                                    .allowsHitTesting(false)
++                                    .transaction { $0.animation = nil }
++                            }
++                        }
++                        .transaction { txn in
++                            txn.animation = nil
++                        }
++                    },
++                    empty: {
++                        EmptyBrowserPane(onNewTab: { vm.newTab() })
++                            .frame(maxWidth: .infinity, maxHeight: .infinity)
++                    }
++                )
++            }
++            .frame(maxWidth: .infinity, maxHeight: .infinity)
++        }
++        .background(Color(.systemBackground).ignoresSafeArea())
++        .overlay(alignment: .topLeading) {
++            if vm.isSidebarVisible {
++                SidebarOverlay(
++                    isVisible: Binding(
++                        get: { vm.isSidebarVisible },
++                        set: { isVisible in
++                            vm.setSidebarVisible(isVisible)
++                        }
++                    ),
++                    width: configuration.sidebarWidth,
++                    viewModel: vm,
++                    onSelect: onSidebarSelect
++                )
++            }
++        }
++        .frame(maxWidth: .infinity, maxHeight: .infinity)
++        .background(
++            SetChromeLimits(minHeight: headerHeight, maxHeight: headerHeight)
++                .frame(width: 0, height: 0)
++        )
++        #if DEBUG
++        return base
++            .onAppear {
++                print(hardLayoutLogLine)
++            }
++            .onChange(of: safeWidth) { _ in
++                print(hardLayoutLogLine)
++            }
++            .onChange(of: vm.isSidebarVisible) { _ in
++                print(hardLayoutLogLine)
++            }
++        #else
++        return base
++        #endif
++    }
++}
++private struct LandscapeWebPane: View {
++    let webViewHandle: WebViewHandle
++    @ObservedObject var vm: SplitBrowserViewModel
++    @EnvironmentObject private var chrome: BrowserChromeState
++    @Environment(\.uxPolicy) private var uxPolicy
++    let chromeStyle: BrowserChromeStyle
++    let contentLeadingSafe: CGFloat
++    let contentTrailingSafe: CGFloat
++    let contentTopSafe: CGFloat
++    let contentBottomSafe: CGFloat
++    let headerHeight: CGFloat
++    var body: some View {
++        Group {
++            if let tabID = vm.activeTabID {
++                WebView(
++                    webViewHandle: webViewHandle,
++                    realityUpdater: vm.runtimeRealityUpdaterIfAlive(for: tabID),
++                    headerView: SafariHeaderView(
++                        vm: vm,
++                        style: chromeStyle,
++                        topBarMode: .passive,
++                        leadingSafeAreaPadding: contentLeadingSafe,
++                        trailingSafeAreaPadding: contentTrailingSafe
++                    ),
++                    topContentInset: 0,
++                    bottomContentInset: 0,
++                    onScroll: { offset, scrollView in
++                        chrome.handleWebScroll(contentOffset: offset, scrollView: scrollView)
++                        vm.handleWebScroll(contentOffset: offset, scrollView: scrollView)
++                    },
++                    onSwipeBack: { vm.send(.goBack) },
++                    onSwipeForward: { vm.send(.goForward) },
++                    canSwipeBack: { vm.sessionStore.canGoBack(tabID: tabID) },
++                    canSwipeForward: { vm.sessionStore.canGoForward(tabID: tabID) },
++                    onPullToRefresh: { vm.send(.reload) },
++                    identity: tabID,
++                    onFocus: { vm.setActivePane(.left) },
++                    edgeSwipePolicy: uxPolicy.swipeNavigation
++                )
++                .frame(maxWidth: .infinity, maxHeight: .infinity)
++                .clipped()
++            } else {
++                Color.clear
++            }
++        }
++    }
++}
+diff --git a/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Layout/SplitBrowserView.swift b/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Layout/SplitBrowserView.swift
+new file mode 100644
+index 0000000..314a37a
+--- /dev/null
++++ b/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Layout/SplitBrowserView.swift
+@@ -0,0 +1,319 @@
++import SwiftUI
++import UIKit
++import SafariLikeCoreKit
++import SafariLikeUXKit
++/// Safari-style split view with two web panes sharing tabs
++struct SplitBrowserView: View {
++    @ObservedObject var vm: SplitBrowserViewModel
++    let configuration: SafariLikeConfiguration
++    let browserRootWidth: CGFloat
++    private static func parsePlaceholderID(_ raw: String) -> UUID {
++        if let uuid = UUID(uuidString: raw) { return uuid }
++        assertionFailure("Invalid SplitBrowserView placeholder UUID: \(raw)")
++        return UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
++    }
++    private static let leftPlaceholderID: UUID = parsePlaceholderID("AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA")
++    private static let rightPlaceholderID: UUID = parsePlaceholderID("BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB")
++    @EnvironmentObject private var chrome: BrowserChromeState
++    @EnvironmentObject private var sceneMetrics: SceneMetrics
++    @Environment(\.isLayoutStabilizing) private var isLayoutStabilizing
++    @Environment(\.uxPolicy) private var uxPolicy
++    @GestureState private var dragTranslation: CGFloat = 0
++    @State private var isDragging = false
++    private var minPaneWidth: CGFloat { uxPolicy.splitBrowser.minPaneWidth }
++    private let dividerWidth: CGFloat = 10
++    private func uxRestoreState(for tabID: UUID?) -> UXRestoreController.State {
++        guard let tabID else { return .idle }
++        return vm.uxRestoreStateIfAlive(tabID: tabID) ?? .idle
++    }
++    var body: some View {
++        GeometryReader { geo in
++            let totalWidth = geo.size.width
++            let effectiveMinPaneWidth = min(minPaneWidth, max(0, (totalWidth - dividerWidth) / 2))
++            let ratio = resolvedRatio(totalWidth: totalWidth, minPaneWidth: effectiveMinPaneWidth)
++            let leftPaneWidth = calculateLeftPaneWidth(totalWidth: totalWidth, ratio: ratio, minPaneWidth: effectiveMinPaneWidth)
++            let rightPaneWidth = max(0, totalWidth - leftPaneWidth - dividerWidth)
++            ZStack(alignment: .topTrailing) {
++                splitContent(
++                    totalWidth: totalWidth,
++                    leftPaneWidth: leftPaneWidth,
++                    rightPaneWidth: rightPaneWidth,
++                    minPaneWidth: effectiveMinPaneWidth
++                )
++                closeButton
++            }
++        }
++        .onAppear {
++            vm.ensureSplitViewInvariantsIfNeeded()
++        }
++        .onChange(of: vm.rightTabID) { _ in
++            vm.ensureSplitViewInvariantsIfNeeded()
++        }
++    }
++    // MARK: - Layers
++    @ViewBuilder
++    private func splitContent(
++        totalWidth: CGFloat,
++        leftPaneWidth: CGFloat,
++        rightPaneWidth: CGFloat,
++        minPaneWidth: CGFloat
++    ) -> some View {
++        HStack(spacing: 0) {
++            // Do not reserve a split pane if the tab doesn't exist yet.
++            // The ViewModel invariant fixer will create/repair tab IDs immediately.
++            if let leftID = vm.leftTabID, let rightID = vm.rightTabID, leftID != rightID {
++                pane(
++                    side: .left,
++                    width: leftPaneWidth,
++                    tabID: leftID,
++                    placeholderID: Self.leftPlaceholderID,
++                    indicatorAlignment: .topLeading
++                )
++                divider(totalWidth: totalWidth, minPaneWidth: minPaneWidth)
++                pane(
++                    side: .right,
++                    width: rightPaneWidth,
++                    tabID: rightID,
++                    placeholderID: Self.rightPlaceholderID,
++                    indicatorAlignment: .topTrailing
++                )
++            } else {
++                pane(
++                    side: .left,
++                    width: totalWidth,
++                    tabID: vm.leftTabID,
++                    placeholderID: Self.leftPlaceholderID,
++                    indicatorAlignment: .topLeading
++                )
++            }
++        }
++        .animation(isLayoutStabilizing ? nil : .easeInOut(duration: 0.20), value: vm.activePane)
++    }
++    private enum PaneSide { case left, right }
++    @ViewBuilder
++    private func pane(
++        side: PaneSide,
++        width: CGFloat,
++        tabID: UUID?,
++        placeholderID: UUID,
++        indicatorAlignment: Alignment
++    ) -> some View {
++        let isFocused = (vm.activePane == (side == .left ? .left : .right))
++        let restoreState = uxRestoreState(for: tabID)
++        let snapshotData = tabID.flatMap { vm.tabManager.snapshotDataForTabIfAvailable($0) }
++        ZStack {
++            if let tabID, let handle = vm.webViewHandleForRendering(tabID: tabID) {
++                WebView(
++                        webViewHandle: handle,
++                    realityUpdater: vm.runtimeRealityUpdaterIfAlive(for: tabID),
++                        headerView: SafariHeaderView(
++                            vm: vm,
++                            style: .padLandscapeSafari,
++                            topBarMode: .passive
++                        ),
++                        onScroll: { offset, scrollView in
++                            chrome.handleWebScroll(contentOffset: offset, scrollView: scrollView)
++                            vm.handleWebScroll(contentOffset: offset, scrollView: scrollView)
++                        },
++                        onSwipeBack: { vm.send(.goBack) },
++                        onSwipeForward: { vm.send(.goForward) },
++                        canSwipeBack: { vm.sessionStore.canGoBack(tabID: tabID) },
++                        canSwipeForward: { vm.sessionStore.canGoForward(tabID: tabID) },
++                        onPullToRefresh: { vm.send(.reload) },
++                        identity: tabID,
++                        onFocus: {
++                            switch side {
++                            case .left: vm.selectLeftPane()
++                            case .right: vm.selectRightPane()
++                            }
++                        },
++                        edgeSwipePolicy: uxPolicy.swipeNavigation
++                    )
++                    .frame(maxWidth: .infinity, maxHeight: .infinity)
++                    .clipped()
++            } else {
++                PanePlaceholder(state: restoreState, snapshotData: snapshotData)
++            }
++            RestoreOverlayLayer(state: restoreState, snapshotData: snapshotData)
++                .equatable()
++        }
++        .frame(width: width)
++        .clipped()
++        .modifier(PaneChromeModifier(isFocused: isFocused, indicatorAlignment: indicatorAlignment))
++    }
++    private func divider(totalWidth: CGFloat, minPaneWidth: CGFloat) -> some View {
++        ZStack {
++            Color.clear
++            RoundedRectangle(cornerRadius: 6, style: .continuous)
++                .fill(.ultraThinMaterial)
++                .overlay(
++                    RoundedRectangle(cornerRadius: 6, style: .continuous)
++                        .stroke(Color.secondary.opacity(isDragging ? 0.55 : 0.25), lineWidth: 1)
++                )
++                .padding(.vertical, 10)
++                .padding(.horizontal, 2)
++            VStack(spacing: 4) {
++                Capsule().fill(Color.secondary.opacity(0.55)).frame(width: 3, height: 18)
++                Capsule().fill(Color.secondary.opacity(0.35)).frame(width: 3, height: 18)
++            }
++            .padding(.vertical, 14)
++        }
++        .frame(width: dividerWidth)
++        .contentShape(Rectangle())
++        .gesture(
++            DragGesture()
++                .updating($dragTranslation) { value, state, _ in
++                    state = value.translation.width
++                }
++                .onChanged { _ in
++                    isDragging = true
++                }
++                .onEnded { value in
++                    isDragging = false
++                    commitDrag(totalWidth: totalWidth, translation: value.translation.width, minPaneWidth: minPaneWidth)
++                }
++        )
++        .accessibilityLabel("Resize Split")
++        .animation(isLayoutStabilizing ? nil : .easeInOut(duration: 0.18), value: isDragging)
++    }
++    private var closeButton: some View {
++        Button {
++            vm.closeSpinView()
++        } label: {
++            Image(systemName: "xmark.circle.fill")
++                .font(.system(size: 22, weight: .semibold))
++                .foregroundStyle(Color.secondary)
++                .background(
++                    Circle()
++                        .fill(.ultraThinMaterial)
++                        .frame(width: 36, height: 36)
++                )
++                .frame(width: 44, height: 44)
++        }
++        .buttonStyle(.plain)
++        .padding(12)
++        .zIndex(100)
++        .accessibilityLabel("Close Split View")
++    }
++    private func resolvedRatio(totalWidth: CGFloat, minPaneWidth: CGFloat) -> CGFloat {
++        let (minRatio, maxRatio) = ratioBounds(totalWidth: totalWidth, minPaneWidth: minPaneWidth)
++        let baseRatio = clamp(vm.splitViewRatio, minRatio, maxRatio)
++        let proposedRatio = baseRatio + (dragTranslation / max(1, totalWidth))
++        // Rubber-band when dragging beyond bounds.
++        if proposedRatio < minRatio {
++            let overflow = (proposedRatio - minRatio) * totalWidth
++            let adjustedOverflow = rubberBand(distance: overflow, dimension: totalWidth)
++            return minRatio + (adjustedOverflow / totalWidth)
++        }
++        if proposedRatio > maxRatio {
++            let overflow = (proposedRatio - maxRatio) * totalWidth
++            let adjustedOverflow = rubberBand(distance: overflow, dimension: totalWidth)
++            return maxRatio + (adjustedOverflow / totalWidth)
++        }
++        return proposedRatio
++    }
++    private func commitDrag(totalWidth: CGFloat, translation: CGFloat, minPaneWidth: CGFloat) {
++        let (minRatio, maxRatio) = ratioBounds(totalWidth: totalWidth, minPaneWidth: minPaneWidth)
++        let baseRatio = clamp(vm.splitViewRatio, minRatio, maxRatio)
++        let proposedRatio = baseRatio + (translation / max(1, totalWidth))
++        let committed = clamp(proposedRatio, minRatio, maxRatio)
++        if isLayoutStabilizing {
++            vm.splitViewRatio = committed
++        } else {
++            withAnimation(.easeInOut(duration: 0.18)) {
++                vm.splitViewRatio = committed
++            }
++        }
++    }
++    private func calculateLeftPaneWidth(totalWidth: CGFloat, ratio: CGFloat, minPaneWidth: CGFloat) -> CGFloat {
++        let baseWidth = totalWidth * ratio
++        // Ensure minimum width for both panes.
++        let available = max(0, totalWidth - dividerWidth)
++        let maxLeftWidth = max(0, available - minPaneWidth)
++        let minLeftWidth = minPaneWidth
++        return max(minLeftWidth, min(maxLeftWidth, baseWidth))
++    }
++    private func ratioBounds(totalWidth: CGFloat, minPaneWidth: CGFloat) -> (min: CGFloat, max: CGFloat) {
++        // Convert min widths into ratio bounds for the current container.
++        let minRatio = min(0.49, max(0.01, minPaneWidth / max(1, totalWidth)))
++        let maxRatio = max(0.51, min(0.99, (totalWidth - dividerWidth - minPaneWidth) / max(1, totalWidth)))
++        return (min: minRatio, max: maxRatio)
++    }
++    private func clamp(_ value: CGFloat, _ minValue: CGFloat, _ maxValue: CGFloat) -> CGFloat {
++        max(minValue, min(maxValue, value))
++    }
++    private func rubberBand(distance: CGFloat, dimension: CGFloat) -> CGFloat {
++        // iOS-style rubber banding.
++        // For small overdrag, movement is close to 1:1; it asymptotically slows for large distances.
++        let constant: CGFloat = 0.55
++        return (dimension * constant * distance) / (dimension + constant * abs(distance))
++    }
++}
++private struct PanePlaceholder: View {
++    let state: UXRestoreController.State
++    let snapshotData: Data?
++    var body: some View {
++        switch state {
++        case .timedOut:
++            SkeletonWebPlaceholder()
++        case .idle, .completed, .restoring:
++            Color.gray.opacity(0.1)
++        @unknown default:
++            SkeletonWebPlaceholder()
++        }
++    }
++}
++private struct RestoreOverlayLayer: View, Equatable {
++    let state: UXRestoreController.State
++    let snapshotData: Data?
++    static func == (lhs: RestoreOverlayLayer, rhs: RestoreOverlayLayer) -> Bool {
++        lhs.state == rhs.state && lhs.snapshotData == rhs.snapshotData
++    }
++    @ViewBuilder
++    var body: some View {
++        switch state {
++        case .restoring:
++            if let snapshotData {
++                RestoreOverlay(snapshotData: snapshotData)
++                    .transition(.opacity)
++            } else {
++                EmptyView()
++            }
++        case .timedOut:
++            SkeletonWebPlaceholder()
++                .transition(.opacity)
++        case .idle, .completed:
++            EmptyView()
++        @unknown default:
++            SkeletonWebPlaceholder()
++                .transition(.opacity)
++        }
++    }
++}
++private struct PaneChromeModifier: ViewModifier {
++    let isFocused: Bool
++    let indicatorAlignment: Alignment
++    @Environment(\.isLayoutStabilizing) private var isLayoutStabilizing
++    func body(content: Content) -> some View {
++        content
++            .overlay(
++                Color.black.opacity(isFocused ? 0 : 0.06)
++                    .allowsHitTesting(false)
++            )
++            .overlay(
++                RoundedRectangle(cornerRadius: 12, style: .continuous)
++                    .stroke(isFocused ? Color.accentColor.opacity(0.55) : Color.clear, lineWidth: 1.5)
++                    .padding(6)
++                    .allowsHitTesting(false)
++            )
++            .overlay(alignment: indicatorAlignment) {
++                Circle()
++                    .fill(isFocused ? Color.accentColor : Color.secondary.opacity(0.35))
++                    .frame(width: 7, height: 7)
++                    .padding(10)
++                    .allowsHitTesting(false)
++            }
++            .shadow(color: Color.black.opacity(isFocused ? 0.10 : 0.0), radius: isFocused ? 10 : 0, x: 0, y: 4)
++            .animation(isLayoutStabilizing ? nil : .easeInOut(duration: 0.20), value: isFocused)
++    }
++}
+diff --git a/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Renderer/StartPageRenderer.swift b/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Renderer/StartPageRenderer.swift
+new file mode 100644
+index 0000000..2fe0756
+--- /dev/null
++++ b/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Renderer/StartPageRenderer.swift
+@@ -0,0 +1,329 @@
++import SwiftUI
++import UIKit
++import Combine
++import SafariLikeUXKit
++import SafariLikeCoreKit
++/// Renderer for `BrowserTab.State.startPage`.
++internal struct StartPageRenderer: View {
++    @ObservedObject var vm: SplitBrowserViewModel
++    @ObservedObject var relatedChrome: RelatedChromeState
++    let safeAreaInsets: EdgeInsets
++    @StateObject private var model: StartPageViewModel
++    init(vm: SplitBrowserViewModel, relatedChrome: RelatedChromeState, safeAreaInsets: EdgeInsets) {
++        self.vm = vm
++        self.relatedChrome = relatedChrome
++        self.safeAreaInsets = safeAreaInsets
++        let handler = StartPageClosureActionHandler(
++            onSubmitQueryOrURLString: { text in
++                vm.send(.openURLString(text))
++            },
++            onOpenURLString: { urlString in
++                vm.send(.openURLString(urlString))
++            },
++            onToggleSidebar: { vm.toggleSidebar() },
++            onToggleRelated: {
++                relatedChrome.toggle(animation: vm.relatedAnimation ?? .easeOut(duration: 0.25))
++            },
++            onPresentTabOverview: { vm.presentTabOverview() },
++            onNewTab: { vm.send(.newTab()) },
++            onBack: { vm.send(.goBack) },
++            onForward: { vm.send(.goForward) },
++            onReload: { vm.send(.reload) }
++        )
++        _model = StateObject(
++            wrappedValue: StartPageViewModel(
++                bookmarkStore: vm.bookmarkStore,
++                readingListStore: vm.readingListStore,
++                handler: handler
++            )
++        )
++    }
++    var body: some View {
++        ZStack {
++            // Safari-like: neutral system background + subtle depth.
++            StartPageSystemBackground()
++
++            // UIKit-backed scroll for smooth, continuous scrolling.
++            // IMPORTANT: Start Page is content-only; bottom chrome is owned by the parent
++            // layout (reserved via safeAreaInset), not overlaid inside this renderer.
++            StartPageScrollView(showsIndicators: false) {
++                VStack(spacing: 0) {
++                    VStack(alignment: .leading, spacing: 18) {
++                        // Top breathing room like Safari Start Page.
++                        Color.clear
++                            .frame(height: max(0, safeAreaInsets.top + 22))
++                        StartPageTitleHeader()
++                        if model.favorites.isEmpty == false {
++                            FavoritesSection(
++                                items: model.favorites,
++                                onOpenURLString: { urlString in
++                                    model.send(.openURLString(urlString))
++                                }
++                            )
++                        }
++                        if model.readingListPreview.isEmpty == false {
++                            ReadingListSection(
++                                items: model.readingListPreview,
++                                onOpenItem: { item in
++                                    model.send(.openReadingListItem(id: item.id))
++                                }
++                            )
++                        }
++                        // Bottom breathing room so last section doesn't feel cramped.
++                        Color.clear.frame(height: 28)
++                    }
++                    .frame(maxWidth: DeviceLayout.contentMaxWidth)
++                    .padding(.horizontal, DeviceLayout.horizontalPadding)
++                    .frame(maxWidth: .infinity)
++                }
++                .padding(.bottom, 28)
++            }
++        }
++    }
++}
++// MARK: - Safari-like background
++private struct StartPageSystemBackground: View {
++    var body: some View {
++        ZStack {
++            Color(uiColor: .systemGroupedBackground)
++            // Subtle top gradient (Safari-like depth without custom artwork).
++            LinearGradient(
++                colors: [
++                    Color.black.opacity(0.10),
++                    Color.black.opacity(0.00)
++                ],
++                startPoint: .top,
++                endPoint: .center
++            )
++            .blendMode(.overlay)
++        }
++    }
++}
++private struct StartPageTitleHeader: View {
++    var body: some View {
++        VStack(alignment: .leading, spacing: 6) {
++            Text("Start Page")
++                .font(.system(size: 28, weight: .bold))
++                .foregroundStyle(.primary)
++            Text("Favorites and Reading List")
++                .font(.subheadline)
++                .foregroundStyle(.secondary)
++        }
++        .padding(.top, 4)
++    }
++}
++// MARK: - Favorites
++private struct FavoritesSection: View {
++    let items: [BrowserBookmark]
++    let onOpenURLString: (String) -> Void
++    private var columns: [GridItem] {
++        // Adaptive grid like Safari: as width grows, more columns appear.
++        [GridItem(.adaptive(minimum: 84, maximum: 96), spacing: 14, alignment: .top)]
++    }
++    var body: some View {
++        VStack(alignment: .leading, spacing: 10) {
++            Text("Favorites")
++                .font(.headline)
++                .foregroundStyle(.primary)
++            LazyVGrid(columns: columns, alignment: .center, spacing: 18) {
++                ForEach(items.prefix(8)) { item in
++                    Button {
++                        onOpenURLString(item.urlString)
++                    } label: {
++                        FavoriteTile(title: item.title)
++                    }
++                    .buttonStyle(.plain)
++                }
++            }
++            .frame(maxWidth: .infinity)
++        }
++    }
++}
++private struct FavoriteTile: View {
++    let title: String
++    var body: some View {
++        VStack(spacing: 10) {
++            RoundedRectangle(cornerRadius: 22, style: .continuous)
++                .fill(.ultraThinMaterial)
++                .overlay {
++                    RoundedRectangle(cornerRadius: 22, style: .continuous)
++                        .stroke(Color.primary.opacity(0.08), lineWidth: 1)
++                }
++                .frame(width: 84, height: 84)
++                .overlay {
++                    Image(systemName: "globe")
++                        .font(.system(size: 22, weight: .semibold))
++                        .foregroundStyle(.primary.opacity(0.80))
++                }
++            Text(title)
++                .font(.footnote)
++                .foregroundStyle(.primary)
++                .lineLimit(2)
++                .multilineTextAlignment(.center)
++                .frame(width: 92)
++        }
++        .contentShape(Rectangle())
++    }
++}
++// MARK: - Reading List
++private struct ReadingListSection: View {
++    let items: [BrowserReadingListItem]
++    let onOpenItem: (BrowserReadingListItem) -> Void
++    var body: some View {
++        VStack(alignment: .leading, spacing: 10) {
++            HStack {
++                Text("Reading List")
++                    .font(.headline)
++                    .foregroundStyle(.primary)
++                Spacer()
++            }
++            VStack(spacing: 10) {
++                ForEach(items.prefix(4)) { item in
++                    Button {
++                        onOpenItem(item)
++                    } label: {
++                        ReadingListRow(item: item)
++                    }
++                    .buttonStyle(.plain)
++                }
++            }
++        }
++    }
++}
++private struct ReadingListRow: View {
++    let item: BrowserReadingListItem
++    var body: some View {
++        HStack(spacing: 12) {
++            RoundedRectangle(cornerRadius: 14, style: .continuous)
++                .fill(.ultraThinMaterial)
++                .overlay {
++                    Image(systemName: item.isRead ? "book" : "book.closed")
++                        .foregroundStyle(.primary.opacity(0.80))
++                }
++                .frame(width: 44, height: 44)
++            VStack(alignment: .leading, spacing: 2) {
++                Text(item.title)
++                    .font(.system(size: 16, weight: .semibold))
++                    .foregroundStyle(.primary)
++                    .lineLimit(2)
++                Text(item.urlString)
++                    .font(.footnote)
++                    .foregroundStyle(.secondary)
++                    .lineLimit(1)
++            }
++            Spacer(minLength: 0)
++        }
++        .padding(12)
++        .background(
++            RoundedRectangle(cornerRadius: 18, style: .continuous)
++                .fill(.thinMaterial)
++                .overlay {
++                    RoundedRectangle(cornerRadius: 18, style: .continuous)
++                        .stroke(Color.primary.opacity(0.06), lineWidth: 1)
++                }
++        )
++    }
++}
++// MARK: - UIKit scroll bridge
++private struct StartPageScrollView<Content: View>: UIViewRepresentable {
++    let showsIndicators: Bool
++    let content: Content
++    init(showsIndicators: Bool, @ViewBuilder content: () -> Content) {
++        self.showsIndicators = showsIndicators
++        self.content = content()
++    }
++    func makeUIView(context: Context) -> UIScrollView {
++        let scrollView = UIScrollView()
++        scrollView.showsVerticalScrollIndicator = showsIndicators
++        scrollView.showsHorizontalScrollIndicator = false
++        scrollView.alwaysBounceVertical = true
++        scrollView.contentInsetAdjustmentBehavior = .never
++        scrollView.keyboardDismissMode = .interactive
++        scrollView.delaysContentTouches = false
++        scrollView.backgroundColor = .clear
++        let host = context.coordinator.hostingController
++        host.view.backgroundColor = .clear
++        host.view.translatesAutoresizingMaskIntoConstraints = false
++        scrollView.addSubview(host.view)
++        NSLayoutConstraint.activate([
++            host.view.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
++            host.view.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
++            host.view.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
++            host.view.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
++            host.view.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor)
++        ])
++        return scrollView
++    }
++    func updateUIView(_ uiView: UIScrollView, context: Context) {
++        context.coordinator.hostingController.rootView = content
++        uiView.showsVerticalScrollIndicator = showsIndicators
++    }
++    func makeCoordinator() -> Coordinator {
++        Coordinator(rootView: content)
++    }
++    final class Coordinator {
++        let hostingController: UIHostingController<Content>
++        init(rootView: Content) {
++            self.hostingController = UIHostingController(rootView: rootView)
++        }
++    }
++}
++// MARK: - Action handler
++@MainActor
++private final class StartPageClosureActionHandler: StartPageActionHandling {
++    private let onSubmitQueryOrURLString: (String) -> Void
++    private let onOpenURLString: (String) -> Void
++    private let onToggleSidebar: () -> Void
++    private let onToggleRelated: () -> Void
++    private let onPresentTabOverview: () -> Void
++    private let onNewTab: () -> Void
++    private let onBack: () -> Void
++    private let onForward: () -> Void
++    private let onReload: () -> Void
++    init(
++        onSubmitQueryOrURLString: @escaping (String) -> Void,
++        onOpenURLString: @escaping (String) -> Void,
++        onToggleSidebar: @escaping () -> Void,
++        onToggleRelated: @escaping () -> Void,
++        onPresentTabOverview: @escaping () -> Void,
++        onNewTab: @escaping () -> Void,
++        onBack: @escaping () -> Void,
++        onForward: @escaping () -> Void,
++        onReload: @escaping () -> Void
++    ) {
++        self.onSubmitQueryOrURLString = onSubmitQueryOrURLString
++        self.onOpenURLString = onOpenURLString
++        self.onToggleSidebar = onToggleSidebar
++        self.onToggleRelated = onToggleRelated
++        self.onPresentTabOverview = onPresentTabOverview
++        self.onNewTab = onNewTab
++        self.onBack = onBack
++        self.onForward = onForward
++        self.onReload = onReload
++    }
++    func handle(_ action: StartPageAction) {
++        switch action {
++        case .submitQueryOrURLString(let text):
++            onSubmitQueryOrURLString(text)
++        case .openURLString(let urlString):
++            onOpenURLString(urlString)
++        case .openReadingListItem(id: _):
++            // StartPageViewModel handles this by marking opened and routing to `.openURLString`.
++            break
++        case .toggleSidebar:
++            onToggleSidebar()
++        case .toggleRelated:
++            onToggleRelated()
++        case .presentTabOverview:
++            onPresentTabOverview()
++        case .newTab:
++            onNewTab()
++        case .goBack:
++            onBack()
++        case .goForward:
++            onForward()
++        case .reload:
++            onReload()
++        }
++    }
++}
+diff --git a/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/StartPage/StartPageView.swift b/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/StartPage/StartPageView.swift
+new file mode 100644
+index 0000000..09d0521
+--- /dev/null
++++ b/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/StartPage/StartPageView.swift
+@@ -0,0 +1,186 @@
++import SwiftUI
++import SafariLikeUXKit
++import SafariLikeCoreKit
++internal struct StartPageView: View {
++    @StateObject private var model: StartPageViewModel
++    /// Root-provided safe area insets.
++    /// Note: Start Page layout should be hosted in a safe-area respecting container.
++    let safeAreaInsets: EdgeInsets
++    @State private var floatingBarHeight: CGFloat = 0
++    init(
++        bookmarkStore: BookmarkStore,
++        readingListStore: ReadingListStore,
++        onSubmitQueryOrURLString: @escaping (String) -> Void,
++        onOpenURLString: @escaping (String) -> Void,
++        onToggleSidebar: @escaping () -> Void,
++        onToggleRelated: @escaping () -> Void,
++        onPresentTabOverview: @escaping () -> Void,
++        onNewTab: @escaping () -> Void,
++        onBack: @escaping () -> Void,
++        onForward: @escaping () -> Void,
++        onReload: @escaping () -> Void,
++        onAddBookmark: @escaping () -> Void,
++        onShare: @escaping () -> Void,
++        safeAreaInsets: EdgeInsets
++    ) {
++        self.safeAreaInsets = safeAreaInsets
++        let handler = StartPageClosureActionHandler(
++            onSubmitQueryOrURLString: onSubmitQueryOrURLString,
++            onOpenURLString: onOpenURLString,
++            onToggleSidebar: onToggleSidebar,
++            onToggleRelated: onToggleRelated,
++            onPresentTabOverview: onPresentTabOverview,
++            onNewTab: onNewTab,
++            onBack: onBack,
++            onForward: onForward,
++            onReload: onReload
++        )
++        _model = StateObject(
++            wrappedValue: StartPageViewModel(
++                bookmarkStore: bookmarkStore,
++                readingListStore: readingListStore,
++                handler: handler
++            )
++        )
++
++		self.onAddBookmark = onAddBookmark
++		self.onShare = onShare
++    }
++	private let onAddBookmark: () -> Void
++	private let onShare: () -> Void
++    var body: some View {
++        ZStack(alignment: .bottom) {
++            StartPageBackgroundView()
++            ScrollView(.vertical, showsIndicators: false) {
++                VStack(spacing: 0) {
++                    VStack(alignment: .leading, spacing: 24) {
++                        Color.clear.frame(height: max(0, safeAreaInsets.top + 16))
++                        StartPageHeaderView()
++                        if model.favorites.isEmpty == false {
++                            TopSitesGrid(
++                                items: model.favorites,
++                                onOpenURLString: { urlString in
++                                    model.send(.openURLString(urlString))
++                                }
++                            )
++                        }
++                        if model.readingListPreview.isEmpty == false {
++                            StartPageReadingListView(
++                                items: model.readingListPreview,
++                                onOpenItem: { item in
++                                    model.send(.openReadingListItem(id: item.id))
++                                }
++                            )
++                        }
++                    }
++                    .frame(maxWidth: DeviceLayout.contentMaxWidth)
++                }
++                .padding(.horizontal, DeviceLayout.horizontalPadding)
++                .frame(maxWidth: .infinity)
++            }
++            .safeAreaInset(edge: .bottom) {
++                // Spacer only: must not steal taps from the floating toolbar.
++                Color.clear
++                    .frame(height: floatingBarHeight)
++                    .allowsHitTesting(false)
++            }
++            StartPageFloatingURLBar(
++                text: $model.urlBarText,
++                barState: $model.urlBarState,
++                onToggleSidebar: { model.send(.toggleSidebar) },
++                onToggleRelated: { model.send(.toggleRelated) },
++                onPresentTabOverview: { model.send(.presentTabOverview) },
++                onNewTab: { model.send(.newTab) },
++                onBack: { model.send(.goBack) },
++                onForward: { model.send(.goForward) },
++                onReload: { model.send(.reload) },
++                onSubmitURL: { text in model.send(.submitQueryOrURLString(text)) },
++				onAddBookmark: onAddBookmark,
++				onShare: onShare
++            )
++            .background(
++                GeometryReader { geo in
++                    Color.clear
++                        .preference(key: FloatingBarHeightPreferenceKey.self, value: geo.size.height)
++                        .allowsHitTesting(false)
++                }
++            )
++        }
++        .onPreferenceChange(FloatingBarHeightPreferenceKey.self) { floatingBarHeight = $0 }
++    }
++}
++@MainActor
++private final class StartPageClosureActionHandler: StartPageActionHandling {
++    private let onSubmitQueryOrURLString: (String) -> Void
++    private let onOpenURLString: (String) -> Void
++    private let onToggleSidebar: () -> Void
++    private let onToggleRelated: () -> Void
++    private let onPresentTabOverview: () -> Void
++    private let onNewTab: () -> Void
++    private let onBack: () -> Void
++    private let onForward: () -> Void
++    private let onReload: () -> Void
++    init(
++        onSubmitQueryOrURLString: @escaping (String) -> Void,
++        onOpenURLString: @escaping (String) -> Void,
++        onToggleSidebar: @escaping () -> Void,
++        onToggleRelated: @escaping () -> Void,
++        onPresentTabOverview: @escaping () -> Void,
++        onNewTab: @escaping () -> Void,
++        onBack: @escaping () -> Void,
++        onForward: @escaping () -> Void,
++        onReload: @escaping () -> Void
++    ) {
++        self.onSubmitQueryOrURLString = onSubmitQueryOrURLString
++        self.onOpenURLString = onOpenURLString
++        self.onToggleSidebar = onToggleSidebar
++        self.onToggleRelated = onToggleRelated
++        self.onPresentTabOverview = onPresentTabOverview
++        self.onNewTab = onNewTab
++        self.onBack = onBack
++        self.onForward = onForward
++        self.onReload = onReload
++    }
++    func handle(_ action: StartPageAction) {
++        switch action {
++        case .submitQueryOrURLString(let text):
++            onSubmitQueryOrURLString(text)
++        case .openURLString(let urlString):
++            onOpenURLString(urlString)
++        case .openReadingListItem:
++            // This is handled within StartPageViewModel (mark opened), then forwarded as .openURLString.
++            break
++        case .toggleSidebar:
++            onToggleSidebar()
++        case .toggleRelated:
++            onToggleRelated()
++        case .presentTabOverview:
++            onPresentTabOverview()
++        case .newTab:
++            onNewTab()
++        case .goBack:
++            onBack()
++        case .goForward:
++            onForward()
++        case .reload:
++            onReload()
++        }
++    }
++}
++private struct FloatingBarHeightPreferenceKey: PreferenceKey {
++    static var defaultValue: CGFloat = 0
++    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
++        value = max(value, nextValue())
++    }
++}
++private struct StartPageHeaderView: View {
++    var body: some View {
++        VStack(alignment: .leading, spacing: 4) {
++            Text("Start Page")
++                .font(.system(size: 28, weight: .bold))
++                .foregroundStyle(.white)
++            Text("Favorites and Reading List")
++                .foregroundStyle(.white.opacity(0.75))
++        }
++    }
++}
+diff --git a/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/StartPage/StartPageBackgroundView.swift b/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/StartPage/StartPageBackgroundView.swift
+new file mode 100644
+index 0000000..3d1a788
+--- /dev/null
++++ b/RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/StartPage/StartPageBackgroundView.swift
+@@ -0,0 +1,46 @@
++import SwiftUI
++import SafariLikeCoreKit
++internal struct StartPageBackgroundView: View {
++    var body: some View {
++        ZStack {
++            // Procedural "wallpaper" (non-flat) + blur + dim.
++            LinearGradient(
++                colors: [
++                    Color(red: 0.10, green: 0.12, blue: 0.18),
++                    Color(red: 0.18, green: 0.10, blue: 0.22),
++                    Color(red: 0.10, green: 0.16, blue: 0.20)
++                ],
++                startPoint: .topLeading,
++                endPoint: .bottomTrailing
++            )
++            RadialGradient(
++                colors: [
++                    Color.white.opacity(0.10),
++                    Color.clear
++                ],
++                center: .top,
++                startRadius: 10,
++                endRadius: 420
++            )
++            Canvas { context, size in
++                // Subtle grain so it reads like a wallpaper/snapshot under blur.
++                let count = 260
++                for i in 0..<count {
++                    let x = CGFloat((i * 37) % 997) / 997.0 * size.width
++                    let y = CGFloat((i * 91) % 991) / 991.0 * size.height
++                    let r = CGFloat((i % 7) + 1)
++                    let alpha = Double(((i * 13) % 9) + 1) / 900.0
++                    context.fill(
++                        Path(ellipseIn: CGRect(x: x, y: y, width: r, height: r)),
++                        with: .color(.white.opacity(alpha))
++                    )
++                }
++            }
++            .blendMode(.overlay)
++            .opacity(0.8)
++            Rectangle()
++                .fill(.black.opacity(0.22))
++        }
++        .blur(radius: 18)
++    }
++}
+diff --git a/Docs/WKWEBVIEW_LAYOUT_CONTRACT_SCAN.md b/Docs/WKWEBVIEW_LAYOUT_CONTRACT_SCAN.md
+new file mode 100644
+index 0000000..2932a9b
+--- /dev/null
++++ b/Docs/WKWEBVIEW_LAYOUT_CONTRACT_SCAN.md
+@@ -0,0 +1,69 @@
++# WKWebView Layout Contract Scan
++
++Date: 2026-02-07
++
++This repo follows a strict SwiftUI layout + hit-testing contract for WKWebView-based surfaces:
++
++- Do **not** place bottom chrome over the web canvas using `.overlay(alignment: .bottom)`.
++- Do **not** use `.ignoresSafeArea(...)` on web/content host containers (prevents “ghost” hit-test regions and underlap).
++- Reserve bottom chrome space using `.safeAreaInset(edge: .bottom)`.
++- Avoid stacking bottom insets/paddings that “double count” safe-area.
++
++## Fixes Applied
++
++These were contract violations (web/content containers bypassing safe areas) and are now corrected:
++
++- Landscape layout now respects safe areas and avoids manual safe-area padding:
++  - RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Layout/LandscapeBrowserLayout.swift:51
++- Root web-canvas host now respects safe areas (removed `.ignoresSafeArea` from the root container):
++  - RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Layout/SplitBrowserRootView.swift:51
++- Split web-canvas host now respects safe areas (removed `.ignoresSafeArea` from the split content container):
++  - RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Layout/SplitBrowserView.swift:37
++- Start Page renderer/view no longer relies on full-bleed safe-area bypass for its background:
++  - RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Renderer/StartPageRenderer.swift:44
++  - RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/StartPage/StartPageView.swift:53
++  - RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/StartPage/StartPageBackgroundView.swift:3
++
++## Scan Results
++
++### Bottom-chrome overlay check
++
++- Pattern: `.overlay(alignment: .bottom)`
++- Result: **no matches** (contract satisfied)
++
++### Remaining `ignoresSafeArea(...)` occurrences
++
++All remaining occurrences are **intentionally allowed** because they are:
++
++- overlay-only (scrims / full-screen overlays), or
++- background-only painting (does not host web content and does not affect hit-testing of the web canvas), or
++- dedicated non-web UI surfaces (e.g. bottom sheet component).
++
++Allowed occurrences (file:line → why):
++
++- RuntimePackages/SafariLikeUXKit/Sources/SafariLikeUXKit/Overview/BottomSheetView.swift:94
++  - Bottom sheet component; not a WKWebView host.
++- RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Restore/RestoreSnapshotLoadingView.swift:23
++  - Restore overlay surface; does not host WKWebView.
++- RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Restore/RestoreSnapshotLoadingView.swift:50
++  - Restore overlay surface; does not host WKWebView.
++- RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Restore/RestoreSnapshotLoadingView.swift:60
++  - Restore overlay surface; does not host WKWebView.
++- RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Restore/SkeletonWebPlaceholder.swift:14
++  - Placeholder overlay; does not host WKWebView.
++- RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/StartPage/StartPageSearchBar.swift:52
++  - Background-only material extension for the search bar.
++- RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Related/RelatedContainerView.swift:52
++  - Scrim background only; Related is presented as an overlay.
++- RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Layout/BrowserView.swift:148
++  - Full-bleed background painting only.
++- RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Layout/LandscapeBrowserLayout.swift:124
++  - Full-bleed background painting only.
++- RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Sidebar/SidebarView.swift:69
++  - Sidebar surface; not a WKWebView host.
++- RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Tabs/TabOverviewOverlay.swift:34
++  - Tab overview overlay; not a WKWebView host.
++- RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Tabs/TabOverviewOverlay.swift:39
++  - Tab overview overlay; not a WKWebView host.
++- RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/Sidebar/SidebarOverlay.swift:29
++  - Sidebar overlay presentation; not a WKWebView host.

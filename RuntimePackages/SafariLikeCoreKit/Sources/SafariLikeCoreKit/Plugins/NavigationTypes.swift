@@ -1,0 +1,6 @@
+import SafariLikeContracts
+
+public typealias NavigationRequest = SafariLikeContracts.NavigationRequest
+public typealias NavigationEvent = SafariLikeContracts.NavigationEvent
+public typealias InterceptionResponse = SafariLikeContracts.InterceptionResponse
+

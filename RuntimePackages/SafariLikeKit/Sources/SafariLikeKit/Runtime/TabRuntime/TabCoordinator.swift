@@ -1,4 +1,3 @@
-import BrowserCore
 import Foundation
 import SafariLikeCoreKit
 
@@ -122,7 +121,13 @@ final class TabCoordinator {
 
             store.onWebInputFocused = { [weak self] in self?.manager?.onWebInputFocused?() }
             store.onDownloadRequested = { [weak self] request, response in
-                self?.manager?.downloadStore.startDownload(request: request, response: response)
+                guard let manager = self?.manager else { return }
+                manager.downloadStore.startDownload(
+                    sceneID: manager.windowID,
+                    profile: store.browsingProfile,
+                    request: request,
+                    response: response
+                )
             }
             store.onDownloadDecideDestination = { [weak self] (_, _, filename) in
                 self?.manager?.downloadStore.makeDestinationURL(for: filename)
@@ -134,7 +139,7 @@ final class TabCoordinator {
             store.onPolicyDecisionEvent = { [weak self] event in
                 guard let manager = self?.manager else { return }
                 manager.onJournalEvent?(event)
-                NavigationPolicyOverlayModel.shared.record(journalEvent: event)
+                manager.runtimeContextIfAvailable?.navigationPolicyOverlayModel.record(journalEvent: event)
             }
 
             store.onNavigationCommitted = { [weak self] url in

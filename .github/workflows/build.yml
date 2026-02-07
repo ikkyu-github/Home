@@ -1,0 +1,17 @@
+name: build
+
+on:
+  pull_request:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  xcodebuild-no-warnings:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build (fail on warnings)
+        run: |
+          chmod +x Scripts/*.sh Dev/Tools/Scripts/*.sh || true
+          Dev/Tools/Scripts/xcodebuild.sh --tail 200 --fail-on-warnings clean build

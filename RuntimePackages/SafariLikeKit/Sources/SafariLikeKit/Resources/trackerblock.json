@@ -1,0 +1,93 @@
+[
+  {
+    "trigger": {
+      "url-filter": ".*",
+      "resource-type": ["script", "image", "raw"],
+      "if-domain": ["*analytics.google.com", "*googletagmanager.com", "*google-analytics.com", "*googletagservices.com", "*doubleclick.net", "*googlesyndication.com", "*hotjar.com", "*mixpanel.com", "*segment.com", "*amplitude.com", "*fullstory.com", "*logrocket.com", "*sentry.io", "*bugsnag.com", "*rollbar.com"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*google-analytics\\.com/collect.*",
+      "resource-type": ["raw"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*googletagmanager\\.com/gtm.*",
+      "resource-type": ["script"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*hotjar\\.com.*",
+      "resource-type": ["script", "image"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*mixpanel\\.com.*",
+      "resource-type": ["script", "raw"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*segment\\.com.*",
+      "resource-type": ["script", "raw"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*amplitude\\.com.*",
+      "resource-type": ["script", "raw"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*fullstory\\.com.*",
+      "resource-type": ["script", "raw"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*sentry\\.io.*",
+      "resource-type": ["script", "raw"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*bugsnag\\.com.*",
+      "resource-type": ["script", "raw"]
+    },
+    "action": {
+      "type": "block"
+    }
+  }
+]

@@ -1,0 +1,27 @@
+name: architecture
+
+on:
+  pull_request:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  architecture-check:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch PR base ref (for diff-based guards)
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin "${{ github.base_ref }}":"refs/remotes/origin/${{ github.base_ref }}" --depth=1
+
+      - name: Install ripgrep
+        run: brew install ripgrep
+
+      - name: Run architecture checks
+        run: |
+          chmod +x Dev/Tools/Scripts/*.sh || true
+          Dev/Tools/Scripts/architecture_check.sh --ci

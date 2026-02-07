@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 import WebKit
 import os
 import BrowserCore
@@ -61,17 +62,75 @@ public final class TabWebStore: NSObject {
         case pictureInPicture
     }
 
+    public struct Dependencies {
+        public let makeNavigationController: @MainActor (TabWebStore) -> any TabNavigationControlling
+        public let makeContentBlockingController: @MainActor (TabWebStore) -> any TabContentBlockingControlling
+        public let makeProcessRecoveryController: @MainActor (TabWebStore) -> any TabProcessRecoveryControlling
+
+        public init(
+            makeNavigationController: @escaping @MainActor (TabWebStore) -> any TabNavigationControlling,
+            makeContentBlockingController: @escaping @MainActor (TabWebStore) -> any TabContentBlockingControlling,
+            makeProcessRecoveryController: @escaping @MainActor (TabWebStore) -> any TabProcessRecoveryControlling
+        ) {
+            self.makeNavigationController = makeNavigationController
+            self.makeContentBlockingController = makeContentBlockingController
+            self.makeProcessRecoveryController = makeProcessRecoveryController
+        }
+
+        public static func standard() -> Dependencies {
+            Dependencies(
+                makeNavigationController: { TabNavigationController(store: $0) },
+                makeContentBlockingController: { TabContentBlockingController(store: $0) },
+                makeProcessRecoveryController: { TabProcessRecoveryController(store: $0) }
+            )
+        }
+    }
+
     // MARK: - Public state
     public let tabID: UUID
     public let windowID: String
     public let paneID: String
     public let role: Role
     public let browsingProfile: BrowsingProfile
+    internal let defaultHomeURLString: String
 
     /// Pane/tab-scoped WebKit runtime. Owns the `WKWebView` and its configuration.
     public private(set) var webContext: WebContext?
 
+    private var webContextManager: WebContextManager
+    private var webContextRouter: WebContextRouter
+
+    internal let siteSettingsStore: SiteSettingsStore?
+    internal let formFillPolicyEngine: FormFillPolicyEngine?
+    internal let userScriptStore: UserScriptStore?
+
+    internal let restoreStateStore: any TabRestoreStateStoring
+    internal let performanceTierProvider: any TabPerformanceTierProviding
+
+    internal var restoreState: TabRestoreState? {
+        restoreStateStore.restoreState
+    }
+
+    internal func updateRestoreState(currentURL: URL?, lastKnownTitle: String?) {
+        restoreStateStore.updateRestoreState(currentURL: currentURL, lastKnownTitle: lastKnownTitle)
+    }
+
+    internal var performanceTier: TabPriority {
+        performanceTierProvider.performanceTier
+    }
+
+    /// Updates the tab's WebView performance tier.
+    ///
+    /// This is a policy-level input from higher layers (e.g. SafariLikeKit) and
+    /// must not require callers to know CoreKit internal store details.
+    public func setPerformanceTier(_ tier: WebViewPerformanceTier) {
+        performanceTierProvider.performanceTier = tier.tabPriority
+        attachedWebViewPool?.setTabPriority(tabID, priority: tier.tabPriority)
+    }
+
     public let uxRestoreController = UXRestoreController()
+
+    @Published public private(set) var currentWebViewReality: WebViewRealitySnapshot? = nil
     internal var pageTitle: String = ""
     internal var currentURL: URL?
     internal var canGoBack: Bool = false
@@ -145,6 +204,14 @@ public final class TabWebStore: NSObject {
     public private(set) var webViewHandle: WebViewHandle?
     internal var policyBridge: WebKitPolicyBridge?
 
+    private var activationAllowedGate: (@MainActor () -> Bool)?
+
+    private let dependencies: Dependencies
+
+    internal lazy var navigationController: any TabNavigationControlling = dependencies.makeNavigationController(self)
+    internal lazy var contentBlockingController: any TabContentBlockingControlling = dependencies.makeContentBlockingController(self)
+    internal lazy var processRecoveryController: any TabProcessRecoveryControlling = dependencies.makeProcessRecoveryController(self)
+
     internal private(set) var currentContextRoute: WebContextRoute = .paneDefault
 
     private var attachedWebViewPool: WebViewPool?
@@ -167,6 +234,9 @@ public final class TabWebStore: NSObject {
     /// manage downloads (progress, resume, background sessions).
     public var onDownloadRequested: ((URLRequest, URLResponse) -> Void)?
 
+    /// Emitted when a navigation fails (provisional/committed) or a process termination is detected.
+    public var onNavigationFailure: ((NavigationFailureRecord) -> Void)?
+
     /// Emitted when the Safari-like policy layer evaluates a navigation decision.
     ///
     /// The app is expected to append this event to the session journal.
@@ -183,6 +253,7 @@ public final class TabWebStore: NSObject {
 
     // MARK: - Internal
     internal var companionTask: Task<Void, Never>?
+    internal var pendingResolvedURLString: String?
     internal var pendingProcessRecoverTask: Task<Void, Never>?
     internal var processRecoverAttempts: Int = 0
     internal var lastProcessTerminateAt: CFTimeInterval = 0
@@ -202,11 +273,13 @@ public final class TabWebStore: NSObject {
     internal var estimatedProgressObservation: NSKeyValueObservation?
     internal var isLoadingObservation: NSKeyValueObservation?
     private var runningTasks: [UUID: Task<Void, Never>] = [:]
+    internal var lastAppliedUserScriptsFingerprint: UInt64?
     @available(iOS 14.5, *)
     private var downloadDestinations: [ObjectIdentifier: URL] = [:]
     internal let contentBlockerManager: (any ContentBlockingProviding)?
     internal weak var websitePreferencesProvider: (any WebsitePreferencesProviding)?
     internal var pendingWebPermissionDecisions: [UUID: (WKPermissionDecision) -> Void] = [:]
+    internal var pendingWebPermissionRequests: [UUID: (host: String, kind: WebPermissionKind)] = [:]
     internal var webPermissionPromptObserver: NSObjectProtocol?
     internal let logger = Logger(subsystem: "SafariLikeKit", category: "TabWebStore")
     private let defaultSearchEngineURL: URL
@@ -226,19 +299,38 @@ public final class TabWebStore: NSObject {
         searchEngineURL: URL = DefaultURLs.SearchEngine.googleQuery,
         contentBlockerManager: (any ContentBlockingProviding)? = nil,
         websitePreferencesProvider: (any WebsitePreferencesProviding)? = nil,
+        siteSettingsStore: SiteSettingsStore? = nil,
+        formFillPolicyEngine: FormFillPolicyEngine? = nil,
+        userScriptStore: UserScriptStore? = nil,
         browsingProfile: BrowsingProfile = .regular,
-        configFactory: WebViewConfigurationFactory
+        configFactory: WebViewConfigurationFactory,
+        webContextManager: WebContextManager,
+        webContextRouter: WebContextRouter,
+        performanceTierProvider: any TabPerformanceTierProviding,
+        restoreStateStore: any TabRestoreStateStoring,
+        dependencies: Dependencies
     ) {
         self.tabID = tabID
         self.windowID = windowID
         self.paneID = paneID
         self.role = role
         self.browsingProfile = browsingProfile
+        self.defaultHomeURLString = defaultHomeURLString
         self.defaultSearchEngineURL = searchEngineURL
         self._searchEngineURL = searchEngineURL
         self.contentBlockerManager = contentBlockerManager
         self.websitePreferencesProvider = websitePreferencesProvider
+        self.siteSettingsStore = siteSettingsStore
+        self.formFillPolicyEngine = formFillPolicyEngine
+        self.userScriptStore = userScriptStore
         self.configFactory = configFactory
+        self.webContextManager = webContextManager
+        self.webContextRouter = webContextRouter
+        self.performanceTierProvider = performanceTierProvider
+        self.restoreStateStore = restoreStateStore
+        self.dependencies = dependencies
+
+        _ = configuration
 
         // Do not create WKWebView at init. Will be created lazily when tab is activated/visible.
         self.webView = nil
@@ -257,6 +349,19 @@ public final class TabWebStore: NSObject {
         super.init()
     }
 
+    /// Scene-level wiring to ensure strict window isolation.
+    @MainActor
+    public func setWebContextServices(manager: WebContextManager, router: WebContextRouter) {
+        self.webContextManager = manager
+        self.webContextRouter = router
+    }
+
+    /// Gate used by the owner (e.g. TabRegistry) to suppress activation globally.
+    @MainActor
+    public func setActivationAllowedGate(_ gate: @escaping @MainActor () -> Bool) {
+        self.activationAllowedGate = gate
+    }
+
     /// Threading: Call on the main actor.
     public func activate() async {
         await activate(using: attachedWebViewPool)
@@ -264,7 +369,21 @@ public final class TabWebStore: NSObject {
 
     /// Threading: Call on the main actor.
     public func activate(using pool: WebViewPool? = nil) async {
-        let pool = pool ?? .shared
+        if let gate = activationAllowedGate, gate() == false {
+            return
+        }
+        let resolvedPool = pool ?? attachedWebViewPool
+        guard let pool = resolvedPool else {
+            #if DEBUG
+            assertionFailure("[TabWebStore] activate(using:) requires an injected WebViewPool. tabID=\(tabID) paneID=\(paneID) windowID=\(windowID)")
+            #endif
+            Diagnostics.logError(
+                "[TabWebStore] SUPPRESS activation (missing WebViewPool) tabID=\(tabID) paneID=\(paneID) windowID=\(windowID)",
+                subsystem: .web,
+                category: "TabWebStore"
+            )
+            return
+        }
         // Lazily create WKWebView only when tab is activated/visible
         if webView == nil {
             uxRestoreController.markRestoring()
@@ -279,13 +398,13 @@ public final class TabWebStore: NSObject {
                 navigationType: .other,
                 sourceURL: nil
             )
-            let route = await WebContextRouter.shared.routeContext(
+            let route = await webContextRouter.routeContext(
                 for: navCtx,
                 paneID: PaneID(rawValue: paneID) ?? .primary,
                 privacyMode: privacyMode
             )
             currentContextRoute = route
-            let context = WebContextManager.shared.context(
+            let context = webContextManager.context(
                 windowID: windowID,
                 paneID: paneID,
                 tabID: tabID,
@@ -320,6 +439,16 @@ public final class TabWebStore: NSObject {
         deactivate(releaseMode: .warm)
     }
 
+    /// Detach UI handle but keep the web view alive in the pool when possible.
+    public func detachWebViewForBackground() {
+        deactivate(releaseMode: .warm)
+    }
+
+    /// Discard the web view (cold release) while keeping the store instance alive.
+    public func discardWebView() {
+        deactivate(releaseMode: .cold)
+    }
+
     public enum WebViewReleaseMode: Sendable {
         /// Release to the engine idle pool when possible.
         case warm
@@ -335,17 +464,22 @@ public final class TabWebStore: NSObject {
         // Downgrade render state before detaching and nil-ing references.
         self.webContext?.renderState = .suspended
 
-        let pool = attachedWebViewPool ?? .shared
-        switch releaseMode {
-        case .warm:
-            pool.releaseTab(tabID)
-        case .cold:
-            pool.invalidateTab(tabID)
+        if let pool = attachedWebViewPool {
+            switch releaseMode {
+            case .warm:
+                pool.releaseTab(tabID)
+            case .cold:
+                pool.invalidateTab(tabID)
+            }
+        } else {
+            #if DEBUG
+            assertionFailure("[TabWebStore] deactivate called without an attached WebViewPool. tabID=\(tabID) paneID=\(paneID) windowID=\(windowID)")
+            #endif
         }
         self.webView = nil
         self.webViewHandle = nil
         self.webContext = nil
-        WebContextManager.shared.tearDownContext(windowID: windowID, paneID: paneID, tabID: tabID)
+        webContextManager.tearDownContext(windowID: windowID, paneID: paneID, tabID: tabID)
     }
 
     /// Detach the WKWebView aggressively.
@@ -412,8 +546,7 @@ public final class TabWebStore: NSObject {
         teardownObservers()
 
         // 4) Release WKWebView via pool bookkeeping.
-        let pool = attachedWebViewPool ?? .shared
-        pool.invalidateTab(tabID)
+        attachedWebViewPool?.invalidateTab(tabID)
 
         // 3) Fully tear down the WKWebView core.
         invalidateWebViewCore()
@@ -557,5 +690,26 @@ extension TabWebStore {
     func _cancelCompanionTask() {
         companionTask?.cancel()
         companionTask = nil
+    }
+}
+
+// MARK: - WebView reality bridge
+
+extension TabWebStore: WebViewRealityUpdating, WebViewRealityObserving {
+    public func updateReality(_ snapshot: WebViewRealitySnapshot) {
+        guard snapshot.tabID == tabID else { return }
+        currentWebViewReality = snapshot
+    }
+
+    public var webViewRealityPublisher: AnyPublisher<WebViewRealitySnapshot?, Never> {
+        $currentWebViewReality.eraseToAnyPublisher()
+    }
+
+    public var uxRestoreStatePublisher: AnyPublisher<UXRestoreController.State, Never> {
+        uxRestoreController.$state.eraseToAnyPublisher()
+    }
+
+    public var currentUXRestoreState: UXRestoreController.State {
+        uxRestoreController.state
     }
 }

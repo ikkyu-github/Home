@@ -13,8 +13,6 @@
 		2978A8982EF70F0C006A2BCF /* SafariLikeKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 2978A88F2EF70F0C006A2BCF /* SafariLikeKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		2991ADBC2F029689004664C0 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2991ADB52F029689004664C0 /* AppDelegate.swift */; };
 		2991ADBD2F029689004664C0 /* AppRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2991ADB72F029689004664C0 /* AppRootView.swift */; };
-		29F0A1042F2B000000000025 /* UI/Debug/LayoutModeDebugOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F0A1022F2B000000000023 /* UI/Debug/LayoutModeDebugOverlay.swift */; };
-		29F0A1052F2B000000000026 /* UI/Debug/SceneMetricsTestHookView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F0A1032F2B000000000024 /* UI/Debug/SceneMetricsTestHookView.swift */; };
 		2991ADBE2F029689004664C0 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2991ADB82F029689004664C0 /* AppSettings.swift */; };
 		2991ADBF2F029689004664C0 /* SafariPadCloneApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2991ADB92F029689004664C0 /* SafariPadCloneApp.swift */; };
 		2991ADC02F029689004664C0 /* AppNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2991ADB62F029689004664C0 /* AppNotifications.swift */; };
@@ -28,6 +26,8 @@
 		29F0A0152F28000000000016 /* AppBrowserSessionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F0A0142F28000000000015 /* AppBrowserSessionController.swift */; };
 		29F0A0162F2A000000000017 /* Windowing/SceneRestorationKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F0A0162F2A000000000018 /* Windowing/SceneRestorationKeys.swift */; };
 		29F0A0172F2A000000000019 /* Windowing/SceneSessionReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F0A0172F2A00000000001A /* Windowing/SceneSessionReader.swift */; };
+		29F0A1042F2B000000000025 /* LayoutModeDebugOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F0A1022F2B000000000023 /* LayoutModeDebugOverlay.swift */; };
+		29F0A1052F2B000000000026 /* SceneMetricsTestHookView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F0A1032F2B000000000024 /* SceneMetricsTestHookView.swift */; };
 		2A6C0A1E2F27000000ABC003 /* SafariLikeContracts.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A6C0A1E2F27000000ABC002 /* SafariLikeContracts.framework */; };
 		2A6C0A1E2F27000000ABC005 /* SafariLikeContracts.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A6C0A1E2F27000000ABC002 /* SafariLikeContracts.framework */; };
 		2A6C0A1E2F27000000ABC013 /* SafariLikeContracts.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A6C0A1E2F27000000ABC002 /* SafariLikeContracts.framework */; };
@@ -36,6 +36,7 @@
 		5F5E1A0A2F10AAA100000003 /* BrowserCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2942B3272F09143300ACB3F4 /* BrowserCore.framework */; };
 		5F5E1A0A2F10AAA100000020 /* BrowserCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2942B3272F09143300ACB3F4 /* BrowserCore.framework */; };
 		6728FB44541436175A24D6EF /* SafariLikeUXKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 12D93901BE944E25CC10BE2B /* SafariLikeUXKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		7A02FACD2F28000000000003 /* SafariLikeContracts.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A6C0A1E2F27000000ABC002 /* SafariLikeContracts.framework */; };
 		7A3C1B2D4E5F60718293A4B6 /* CrashGuard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A3C1B2D4E5F60718293A4B5 /* CrashGuard.swift */; };
 		7A3C1B2D4E5F60718293A4B9 /* AppFirstFrameStartup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A3C1B2D4E5F60718293A4B8 /* AppFirstFrameStartup.swift */; };
 		A0B1C2D3E4F5060708090A16 /* BrowserCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2942B3272F09143300ACB3F4 /* BrowserCore.framework */; };
@@ -130,8 +131,6 @@
 		2942B3272F09143300ACB3F4 /* BrowserCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = BrowserCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		2978A88F2EF70F0C006A2BCF /* SafariLikeKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SafariLikeKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		2991ADB32F029689004664C0 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		29F0A1022F2B000000000023 /* UI/Debug/LayoutModeDebugOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UI/Debug/LayoutModeDebugOverlay.swift; sourceTree = "<group>"; };
-		29F0A1032F2B000000000024 /* UI/Debug/SceneMetricsTestHookView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UI/Debug/SceneMetricsTestHookView.swift; sourceTree = "<group>"; };
 		2991ADB52F029689004664C0 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		2991ADB62F029689004664C0 /* AppNotifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppNotifications.swift; sourceTree = "<group>"; };
 		2991ADB72F029689004664C0 /* AppRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRootView.swift; sourceTree = "<group>"; };
@@ -150,6 +149,8 @@
 		29F0A0142F28000000000015 /* AppBrowserSessionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppBrowserSessionController.swift; sourceTree = "<group>"; };
 		29F0A0162F2A000000000018 /* Windowing/SceneRestorationKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Windowing/SceneRestorationKeys.swift; sourceTree = "<group>"; };
 		29F0A0172F2A00000000001A /* Windowing/SceneSessionReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Windowing/SceneSessionReader.swift; sourceTree = "<group>"; };
+		29F0A1022F2B000000000023 /* LayoutModeDebugOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutModeDebugOverlay.swift; sourceTree = "<group>"; };
+		29F0A1032F2B000000000024 /* SceneMetricsTestHookView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneMetricsTestHookView.swift; sourceTree = "<group>"; };
 		2A6C0A1E2F27000000ABC002 /* SafariLikeContracts.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SafariLikeContracts.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		7A3C1B2D4E5F60718293A4B5 /* CrashGuard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrashGuard.swift; sourceTree = "<group>"; };
 		7A3C1B2D4E5F60718293A4B8 /* AppFirstFrameStartup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppFirstFrameStartup.swift; sourceTree = "<group>"; };
@@ -280,6 +281,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7A02FACD2F28000000000003 /* SafariLikeContracts.framework in Frameworks */,
 				C0FFEE0A2F00000000000012 /* AppIntents.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -327,23 +329,6 @@
 				2991ADB32F029689004664C0 /* SettingsView.swift */,
 			);
 			path = Views;
-			sourceTree = "<group>";
-		};
-		29F0A1002F2B000000000021 /* UI */ = {
-			isa = PBXGroup;
-			children = (
-				29F0A1012F2B000000000022 /* Debug */,
-			);
-			path = UI;
-			sourceTree = "<group>";
-		};
-		29F0A1012F2B000000000022 /* Debug */ = {
-			isa = PBXGroup;
-			children = (
-				29F0A1022F2B000000000023 /* UI/Debug/LayoutModeDebugOverlay.swift */,
-				29F0A1032F2B000000000024 /* UI/Debug/SceneMetricsTestHookView.swift */,
-			);
-			path = Debug;
 			sourceTree = "<group>";
 		};
 		2991ADBB2F029689004664C0 /* App */ = {
@@ -420,6 +405,23 @@
 			children = (
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		29F0A1002F2B000000000021 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				29F0A1012F2B000000000022 /* Debug */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		29F0A1012F2B000000000022 /* Debug */ = {
+			isa = PBXGroup;
+			children = (
+				29F0A1022F2B000000000023 /* LayoutModeDebugOverlay.swift */,
+				29F0A1032F2B000000000024 /* SceneMetricsTestHookView.swift */,
+			);
+			path = Debug;
 			sourceTree = "<group>";
 		};
 		7A3C1B2D4E5F60718293A4B7 /* Boot */ = {
@@ -649,6 +651,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				7A02FACC2F28000000000002 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				7A02FAC0BE9FD14D936B67D7 /* RuntimePackages/SafariLikeUXKit/Sources/SafariLikeUXKit */,
@@ -975,8 +978,8 @@
 				001B01417A934EF8B8B90AEE /* Diagnostics/AppPerformance.swift in Sources */,
 				29F0A0152F28000000000016 /* AppBrowserSessionController.swift in Sources */,
 				2991ADBD2F029689004664C0 /* AppRootView.swift in Sources */,
-				29F0A1042F2B000000000025 /* UI/Debug/LayoutModeDebugOverlay.swift in Sources */,
-				29F0A1052F2B000000000026 /* UI/Debug/SceneMetricsTestHookView.swift in Sources */,
+				29F0A1042F2B000000000025 /* LayoutModeDebugOverlay.swift in Sources */,
+				29F0A1052F2B000000000026 /* SceneMetricsTestHookView.swift in Sources */,
 				2991ADBE2F029689004664C0 /* AppSettings.swift in Sources */,
 				29F0A0012F0A000000000001 /* AppSettingsStore.swift in Sources */,
 				2991ADBF2F029689004664C0 /* SafariPadCloneApp.swift in Sources */,
@@ -1103,6 +1106,11 @@
 			isa = PBXTargetDependency;
 			target = 7A02FAC1BE9FD14D936B67D7 /* SafariLikeUXKit */;
 			targetProxy = 0104E981328C5B3E9B9DDC2A /* PBXContainerItemProxy */;
+		};
+		7A02FACC2F28000000000002 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2A6C0A1E2F27000000ABC001 /* SafariLikeContracts */;
+			targetProxy = 2A6C0A1E2F27000000ABC00E /* PBXContainerItemProxy */;
 		};
 		7C7F00002F06A9C50010B464 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -1513,6 +1521,10 @@
 				DEVELOPMENT_TEAM = N8WLQBU8MS;
 				ENABLE_APP_INTENTS = NO;
 				ENABLE_PREVIEWS = YES;
+				EXCLUDED_SOURCE_FILE_NAMES = (
+					App/UI/Debug/LayoutModeDebugOverlay.swift,
+					App/UI/Debug/SceneMetricsTestHookView.swift,
+				);
 				EXTRACT_APP_INTENTS_METADATA = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
@@ -1724,6 +1736,7 @@
 				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = NO;
 				DEVELOPMENT_TEAM = "";
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
@@ -1772,6 +1785,7 @@
 				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = NO;
 				DEVELOPMENT_TEAM = "";
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
@@ -1820,6 +1834,7 @@
 				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = NO;
 				DEVELOPMENT_TEAM = "";
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
@@ -1863,6 +1878,7 @@
 				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = NO;
 				DEVELOPMENT_TEAM = "";
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;

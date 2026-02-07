@@ -1,0 +1,159 @@
+== Modules ==
+- App
+- BrowserCore
+- SafariLikeBuiltinPlugins
+- SafariLikeContracts
+- SafariLikeCoreKit
+- SafariLikeKit
+- SafariLikeUIKit
+- SafariLikeUXKit
+
+== Module Import Graph (local edges) ==
+- App: SafariLikeContracts, SafariLikeKit
+- BrowserCore: SafariLikeContracts
+- SafariLikeBuiltinPlugins: BrowserCore, SafariLikeContracts
+- SafariLikeContracts: (none)
+- SafariLikeCoreKit: BrowserCore, SafariLikeContracts
+- SafariLikeKit: BrowserCore, SafariLikeContracts, SafariLikeCoreKit, SafariLikeUXKit
+- SafariLikeUIKit: SafariLikeContracts, SafariLikeCoreKit, SafariLikeKit
+- SafariLikeUXKit: (none)
+
+== Circular References ==
+- none detected (module-level imports)
+
+== Layer Rules ==
+- FORBIDDEN: App imports SafariLikeContracts (App must be facade-only)
+- FORBIDDEN: SafariLikeUIKit imports SafariLikeCoreKit (Host must not import engine internals)
+- FORBIDDEN IMPORT: RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Plugins/Examples/AnalyticsPlugin.swift imports BrowserCore (Plugin implementations must be Contracts-only)
+- FORBIDDEN IMPORT: RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Plugins/Examples/DarkModePlugin.swift imports BrowserCore (Plugin implementations must be Contracts-only)
+- FORBIDDEN IMPORT: RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Plugins/Examples/AdBlockerPlugin.swift imports BrowserCore (Plugin implementations must be Contracts-only)
+- FORBIDDEN IMPORT: RuntimePackages/SafariLikeUIKit/Sources/SafariLikeUIKit/WebsitePreferences/WebsitePreferencesStore.swift imports SafariLikeCoreKit (UIKit host must use facade + contracts only)
+- FORBIDDEN IMPORT: RuntimePackages/SafariLikeUIKit/Sources/SafariLikeUIKit/Composition/UIKitMemoryPressureSource.swift imports SafariLikeCoreKit (UIKit host must use facade + contracts only)
+
+== Duplicate Filenames (.swift) ==
+- AdBlockerPlugin.swift
+    - RuntimePackages/SafariLikeKit/Sources/SafariLikeBuiltinPlugins/AdBlockerPlugin.swift
+    - RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Plugins/Examples/AdBlockerPlugin.swift
+- AnalyticsPlugin.swift
+    - RuntimePackages/SafariLikeKit/Sources/SafariLikeBuiltinPlugins/AnalyticsPlugin.swift
+    - RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Plugins/Examples/AnalyticsPlugin.swift
+- BrowserPlugin.swift
+    - RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Plugins/BrowserPlugin.swift
+    - RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Plugins/Core/BrowserPlugin.swift
+- BrowserSession.swift
+    - RuntimePackages/BrowserCore/Sources/BrowserCore/Models/BrowserSession.swift
+    - RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Session/BrowserSession.swift
+- BrowserSessionStore.swift
+    - RuntimePackages/BrowserCore/Sources/BrowserCore/Session/BrowserSessionStore.swift
+    - RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Core/Session/BrowserSessionStore.swift
+- BrowserTab.swift
+    - RuntimePackages/BrowserCore/Sources/BrowserCore/Models/BrowserTab.swift
+    - RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Core/Models/BrowserTab.swift
+- BrowserTabGroup.swift
+    - RuntimePackages/BrowserCore/Sources/BrowserCore/Models/BrowserTabGroup.swift
+    - RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Core/Models/BrowserTabGroup.swift
+- CrashGuard.swift
+    - App/Boot/CrashGuard.swift
+    - RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Runtime/Crash/CrashGuard.swift
+- DarkModePlugin.swift
+    - RuntimePackages/SafariLikeKit/Sources/SafariLikeBuiltinPlugins/DarkModePlugin.swift
+    - RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Plugins/Examples/DarkModePlugin.swift
+- DefaultURLs.swift
+    - RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/DefaultURLs.swift
+    - RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Public/DefaultURLs.swift
+- InjectionTiming.swift
+    - RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Plugins/InjectionTiming.swift
+    - RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Plugins/InjectionTiming.swift
+- NavigationTypes.swift
+    - RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Plugins/NavigationTypes.swift
+    - RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Plugins/NavigationTypes.swift
+- PluginCapability.swift
+    - RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Plugins/PluginCapability.swift
+    - RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Plugins/PluginCapability.swift
+- PluginContracts.swift
+    - RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Plugins/PluginContracts.swift
+    - RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Public/PluginContracts.swift
+- PluginDescriptor.swift
+    - RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Plugins/PluginDescriptor.swift
+    - RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Plugins/Core/PluginDescriptor.swift
+- PluginError.swift
+    - RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Plugins/PluginError.swift
+    - RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Plugins/PluginError.swift
+- PluginPermission.swift
+    - RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Plugins/PluginPermission.swift
+    - RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Plugins/PluginPermission.swift
+- SafariLikeBrowserView.swift
+    - RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/UI/SafariLikeBrowserView.swift
+    - RuntimePackages/SafariLikeUIKit/Sources/SafariLikeUIKit/SafariLikeBrowserView.swift
+- SafariLikeConfiguration.swift
+    - RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Config/SafariLikeConfiguration.swift
+    - RuntimePackages/SafariLikeUIKit/Sources/SafariLikeUIKit/SafariLikeConfiguration.swift
+- SnapshotService.swift
+    - RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/WebKit/Snapshot/SnapshotService.swift
+    - RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Runtime/Snapshots/SnapshotService.swift
+- SplitPaneCoordinator.swift
+    - RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Runtime/SplitPane/SplitPaneCoordinator.swift
+    - RuntimePackages/SafariLikeUIKit/Sources/SafariLikeUIKit/SplitPaneCoordinator.swift
+- SyntheticResponse.swift
+    - RuntimePackages/SafariLikeContracts/Sources/SafariLikeContracts/Plugins/SyntheticResponse.swift
+    - RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Plugins/SyntheticResponse.swift
+- TabDiscardPolicy.swift
+    - RuntimePackages/BrowserCore/Sources/BrowserCore/Policy/TabDiscardPolicy.swift
+    - RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Runtime/Discard/TabDiscardPolicy.swift
+- TabState.swift
+    - RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Public/TabState.swift
+    - RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Engine/StateMachine/TabState.swift
+- TabThumbnailStore.swift
+    - RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Stores/TabThumbnailStore.swift
+    - RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Runtime/Thumbnails/TabThumbnailStore.swift
+    - RuntimePackages/SafariLikeUIKit/Sources/SafariLikeUIKit/Thumbnails/TabThumbnailStore.swift
+- TabWebStoreState.swift
+    - RuntimePackages/BrowserCore/Sources/BrowserCore/Web/TabWebStoreState.swift
+    - RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Runtime/Tab/TabWebStoreState.swift
+- UIKitMemoryPressureSource.swift
+    - RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Runtime/Memory/UIKitMemoryPressureSource.swift
+    - RuntimePackages/SafariLikeUIKit/Sources/SafariLikeUIKit/Composition/UIKitMemoryPressureSource.swift
+- WebKitWarmup.swift
+    - RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/WebKit/WebKitWarmup.swift
+    - RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Public/WebKitWarmup.swift
+- WebNavigator.swift
+    - RuntimePackages/BrowserCore/Sources/BrowserCore/Web/WebNavigator.swift
+    - RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Public/WebNavigator.swift
+
+== Duplicate Type Names (heuristic) ==
+- ActivePane (modules: BrowserCore, SafariLikeCoreKit, SafariLikeKit)
+- AdBlockerPlugin (modules: SafariLikeBuiltinPlugins, SafariLikeKit)
+- AnalyticsEvent (modules: SafariLikeBuiltinPlugins, SafariLikeKit)
+- AnalyticsPlugin (modules: SafariLikeBuiltinPlugins, SafariLikeKit)
+- BrowserSession (modules: BrowserCore, SafariLikeKit)
+- CaretBlinkPolicy (modules: SafariLikeKit, SafariLikeUXKit)
+- Configuration (modules: SafariLikeKit, SafariLikeUXKit)
+- DarkModePlugin (modules: SafariLikeBuiltinPlugins, SafariLikeKit)
+- Decision (modules: BrowserCore, SafariLikeCoreKit, SafariLikeKit)
+- Event (modules: SafariLikeKit, SafariLikeUXKit)
+- Input (modules: BrowserCore, SafariLikeCoreKit, SafariLikeKit)
+- Item (modules: BrowserCore, SafariLikeKit)
+- Key (modules: SafariLikeCoreKit, SafariLikeKit)
+- Kind (modules: SafariLikeCoreKit, SafariLikeKit)
+- MemoryPressureEvent (modules: SafariLikeCoreKit, SafariLikeKit)
+- MemoryPressureLevel (modules: SafariLikeCoreKit, SafariLikeKit)
+- Metrics (modules: BrowserCore, SafariLikeKit)
+- Mode (modules: BrowserCore, SafariLikeUXKit)
+- NavigationPolicy (modules: SafariLikeCoreKit, SafariLikeKit)
+- PageView (modules: SafariLikeBuiltinPlugins, SafariLikeKit)
+- PaneID (modules: SafariLikeCoreKit, SafariLikeKit)
+- PaneState (modules: BrowserCore, SafariLikeKit)
+- SearchEngine (modules: App, SafariLikeContracts)
+- SnapshotService (modules: SafariLikeCoreKit, SafariLikeKit)
+- SplitMode (modules: SafariLikeKit, SafariLikeUIKit)
+- SplitPaneCoordinator (modules: SafariLikeKit, SafariLikeUIKit)
+- SplitViewState (modules: BrowserCore, SafariLikeKit)
+- State (modules: BrowserCore, SafariLikeCoreKit, SafariLikeKit, SafariLikeUXKit)
+- TabDescriptor (modules: BrowserCore, SafariLikeKit)
+- TabDiscardPolicy (modules: BrowserCore, SafariLikeKit)
+- TabGroupColor (modules: BrowserCore, SafariLikeCoreKit)
+- TabState (modules: BrowserCore, SafariLikeCoreKit, SafariLikeKit)
+- Timing (modules: SafariLikeContracts, SafariLikeCoreKit)
+- UIKitMemoryPressureSource (modules: SafariLikeKit, SafariLikeUIKit)
+- UserAgentMode (modules: SafariLikeContracts, SafariLikeKit)
+- WindowState (modules: BrowserCore, SafariLikeKit)

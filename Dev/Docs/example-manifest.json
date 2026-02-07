@@ -1,0 +1,11 @@
+{
+  "id": "com.safari-like.example-plugin",
+  "name": "Example Plugin",
+  "version": "1.0.0",
+  "entryPoint": "plugin.js",
+  "permissions": [
+    "navigation",
+    "webview",
+    "storage"
+  ]
+}

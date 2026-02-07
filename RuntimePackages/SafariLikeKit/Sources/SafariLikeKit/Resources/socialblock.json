@@ -1,0 +1,75 @@
+[
+  {
+    "trigger": {
+      "url-filter": ".*",
+      "resource-type": ["script", "image", "raw"],
+      "if-domain": ["*facebook.com", "*facebook.net", "*connect.facebook.net", "*platform.twitter.com", "*platform.linkedin.com", "*widgets.pinterest.com", "*assets.pinterest.com", "*platform.instagram.com", "*www.instagram.com", "*connect.instagram.com"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*facebook\\.com/plugins.*",
+      "resource-type": ["script", "image"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*twitter\\.com/widgets.*",
+      "resource-type": ["script", "image"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*linkedin\\.com/embed.*",
+      "resource-type": ["script", "image"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*pinterest\\.com/pinit.*",
+      "resource-type": ["script", "image"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*instagram\\.com/embed.*",
+      "resource-type": ["script", "image"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*addthis\\.com.*",
+      "resource-type": ["script", "image"]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": ".*sharethis\\.com.*",
+      "resource-type": ["script", "image"]
+    },
+    "action": {
+      "type": "block"
+    }
+  }
+]
