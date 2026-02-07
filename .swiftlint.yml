@@ -1,0 +1,30 @@
+# SwiftLint configuration focused on anti-bloat guardrails.
+# Keep this file minimal; add rules only when they prevent real regressions.
+
+# By default SwiftLint lints the current working directory.
+# We rely on per-rule `included` to keep checks scoped.
+
+reporter: "xcode"
+
+custom_rules:
+  no_shared_singleton_in_kit_and_corekit:
+    name: "No shared singletons (Kit/CoreKit)"
+    message: "Avoid `static let shared` in SafariLikeKit/CoreKit. Use injected instances (scene/tab/window scoped) or constants. Suppress with `// swiftlint:disable:next no_shared_singleton_in_kit_and_corekit` for reviewed exceptions."
+    regex: "(^|\\s)(public\\s+)?static\\s+let\\s+shared\\b"
+    severity: error
+    included:
+      - RuntimePackages/SafariLikeKit/Sources
+      - RuntimePackages/SafariLikeCoreKit/Sources
+    excluded:
+      - RuntimePackages/SafariLikeKit/Tests
+      - RuntimePackages/SafariLikeCoreKit/Tests
+
+  no_webkit_import_in_lower_layers:
+    name: "WebKit import forbidden (Contracts/BrowserCore/UXKit)"
+    message: "Do not import WebKit in Contracts/BrowserCore/UXKit. Move WebKit adapters to SafariLikeCoreKit (or SafariLikeKit if UI bridging is required)."
+    regex: "(?m)^\\s*import\\s+WebKit\\b"
+    severity: error
+    included:
+      - RuntimePackages/SafariLikeContracts/Sources
+      - RuntimePackages/BrowserCore/Sources
+      - RuntimePackages/SafariLikeUXKit/Sources
