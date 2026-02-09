@@ -51,6 +51,7 @@ internal struct PortraitBrowserLayout: View {
         }
         .overlay(alignment: .topLeading) {
             if vm.isSidebarVisible {
+                let excludedBands = [snapshot.chromeBottomRect].filter { $0.height > 0.5 }
                 SidebarOverlay(
                     isVisible: Binding(
                         get: { vm.isSidebarVisible },
@@ -58,6 +59,7 @@ internal struct PortraitBrowserLayout: View {
                     ),
                     width: configuration.sidebarWidth,
                     viewModel: vm,
+                    excludedHitBands: excludedBands,
                     onSelect: onSidebarSelect
                 )
             }

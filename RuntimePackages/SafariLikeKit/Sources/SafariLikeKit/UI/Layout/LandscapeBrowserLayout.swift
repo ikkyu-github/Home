@@ -126,6 +126,7 @@ internal struct LandscapeBrowserLayout: View {
         .background(Color(.systemBackground).ignoresSafeArea())
         .overlay(alignment: .topLeading) {
             if vm.isSidebarVisible {
+                let excludedBands = [snapshot.chromeTopRect].filter { $0.height > 0.5 }
                 SidebarOverlay(
                     isVisible: Binding(
                         get: { vm.isSidebarVisible },
@@ -135,6 +136,7 @@ internal struct LandscapeBrowserLayout: View {
                     ),
                     width: configuration.sidebarWidth,
                     viewModel: vm,
+                    excludedHitBands: excludedBands,
                     onSelect: onSidebarSelect
                 )
             }
