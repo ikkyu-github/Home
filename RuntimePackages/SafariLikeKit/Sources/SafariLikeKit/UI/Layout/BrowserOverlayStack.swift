@@ -57,10 +57,10 @@ internal struct BrowserOverlayStack: View {
                 // Keep the bottom chrome area tappable; the scrim is still full-screen visually.
                 // Use the contract rect (not a bottom strip) so keyboard lift doesn't accidentally re-enable scrim over chrome.
                 let chromeBottomRect = snapshot.chromeBottomRect
-                // Reserve deterministic space for bottom chrome + keyboard lift + safe area.
-                let reservedBottom: CGFloat = snapshot.contentViewportInsets.bottom
-
-                let availableDrawerHeight = max(0, geo.size.height - reservedBottom)
+                let viewportRect = snapshot.contentViewportRect
+                // Place the drawer within the content viewport (single truth).
+                let bottomOffset = max(0, geo.size.height - viewportRect.maxY)
+                let availableDrawerHeight = max(0, viewportRect.height)
                 let mediumHeight = min(availableDrawerHeight, max(260, availableDrawerHeight * 0.55))
                 let largeHeight = min(availableDrawerHeight, max(260, availableDrawerHeight * 0.85))
 
@@ -79,12 +79,7 @@ internal struct BrowserOverlayStack: View {
                         largeHeight: largeHeight
                     )
                     .transition(.move(edge: .bottom))
-                }
-                .safeAreaInset(edge: .bottom, spacing: 0) {
-                    // Keep chrome area deterministic; reserve space without creating a tap blocker.
-                    Color.clear
-                        .frame(height: reservedBottom)
-                        .allowsHitTesting(false)
+                    .padding(.bottom, bottomOffset)
                 }
             }
             .animation(.easeOut(duration: 0.25), value: relatedChrome.isVisible)

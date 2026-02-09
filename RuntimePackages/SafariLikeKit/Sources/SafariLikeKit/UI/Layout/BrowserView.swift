@@ -50,7 +50,10 @@ internal struct BrowserView: View {
                 keyboardHeight: keyboardHeight
             )
 
-            let chromeTopHeight = SafariHeaderView.height(for: chromeStyle)
+            // Only iPad/Safari-style layout uses top chrome. Phone portrait uses bottom chrome only.
+            let chromeTopHeight: CGFloat = (chromeStyle == .padLandscapeSafari)
+                ? SafariHeaderView.height(for: chromeStyle)
+                : 0
 
             let chromeBottomHeight: CGFloat = {
                 guard chromeStyle == .phonePortraitSafari else { return 0 }
