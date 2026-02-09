@@ -55,9 +55,10 @@ internal struct BrowserOverlayStack: View {
         if isRelatedActive(layoutMode: layoutMode, relatedChrome: relatedChrome, snapshot: snapshot) {
             GeometryReader { geo in
                 // Keep the bottom chrome area tappable; the scrim is still full-screen visually.
-                let scrimExclusionHeight = snapshot.chromeBottomHeight
-                // Reserve real space for bottom chrome instead of manual padding.
-                let reservedBottom: CGFloat = snapshot.chromeBottomHeight
+                // Use the contract rect (not a bottom strip) so keyboard lift doesn't accidentally re-enable scrim over chrome.
+                let chromeBottomRect = snapshot.chromeBottomRect
+                // Reserve deterministic space for bottom chrome + keyboard lift + safe area.
+                let reservedBottom: CGFloat = snapshot.contentViewportInsets.bottom
 
                 let availableDrawerHeight = max(0, geo.size.height - reservedBottom)
                 let mediumHeight = min(availableDrawerHeight, max(260, availableDrawerHeight * 0.55))
@@ -67,7 +68,7 @@ internal struct BrowserOverlayStack: View {
                     Color.black.opacity(0.20)
                         .ignoresSafeArea()
                         .transition(.opacity)
-                        .contentShape(ScrimHitShape(excludingBottom: scrimExclusionHeight))
+                        .contentShape(ScrimHitShapeExcludingRect(excluded: chromeBottomRect))
                         .onTapGesture {
                             relatedChrome.setVisible(false, animation: .easeOut(duration: 0.2))
                         }
@@ -105,13 +106,24 @@ internal struct BrowserOverlayStack: View {
     }
 }
 
-private struct ScrimHitShape: Shape {
-    let excludingBottom: CGFloat
+private struct ScrimHitShapeExcludingRect: Shape {
+    let excluded: CGRect
 
     func path(in rect: CGRect) -> Path {
-        let height = max(0, rect.height - excludingBottom)
+        // We only support excluding a full-width horizontal band.
+        // That matches our chrome contract (bottom bar spans full width).
+        let excludedMinY = max(rect.minY, min(rect.maxY, excluded.minY))
+        let excludedMaxY = max(rect.minY, min(rect.maxY, excluded.maxY))
+
         var path = Path()
-        path.addRect(CGRect(x: rect.minX, y: rect.minY, width: rect.width, height: height))
+        // Above excluded
+        if excludedMinY > rect.minY {
+            path.addRect(CGRect(x: rect.minX, y: rect.minY, width: rect.width, height: excludedMinY - rect.minY))
+        }
+        // Below excluded
+        if excludedMaxY < rect.maxY {
+            path.addRect(CGRect(x: rect.minX, y: excludedMaxY, width: rect.width, height: rect.maxY - excludedMaxY))
+        }
         return path
     }
 }

@@ -61,13 +61,17 @@ internal struct BrowserView: View {
                 let dividerHeight: CGFloat = 1
                 let topPadding: CGFloat = 8
                 let bottomPadding: CGFloat = 8
-                return dividerHeight + barBaseHeight + topPadding + bottomPadding + effectiveSafeAreaInsets.bottom
+                // Important: this value describes the bottom chrome itself.
+                // Safe-area bottom is applied separately in `contentViewportInsets`.
+                return dividerHeight + barBaseHeight + topPadding + bottomPadding
             }()
 
+            let viewportTop: CGFloat = effectiveSafeAreaInsets.top + ((chromeStyle == .padLandscapeSafari) ? chromeTopHeight : 0)
+            let viewportBottom: CGFloat = effectiveSafeAreaInsets.bottom + chromeBottomHeight + keyboardLift
             let contentViewportInsets = EdgeInsets(
-                top: 0,
+                top: viewportTop,
                 leading: effectiveSafeAreaInsets.leading,
-                bottom: chromeBottomHeight + keyboardLift,
+                bottom: viewportBottom,
                 trailing: effectiveSafeAreaInsets.trailing
             )
 

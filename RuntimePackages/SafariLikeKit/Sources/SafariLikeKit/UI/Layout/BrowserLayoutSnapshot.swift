@@ -55,6 +55,40 @@ internal struct BrowserLayoutSnapshot {
     /// Use this instead of re-deriving chrome + keyboard offsets in multiple layers.
     let contentViewportInsets: EdgeInsets
 
+    /// Deterministic viewport rect in `BrowserView` container coordinates.
+    var contentViewportRect: CGRect {
+        BrowserContentViewportContract.contentViewportRect(
+            containerSize: containerSize,
+            viewportInsets: contentViewportInsets
+        )
+    }
+
+    /// Deterministic chrome hit regions in `BrowserView` container coordinates.
+    var chromeTopRect: CGRect {
+        BrowserContentViewportContract.chromeTopRect(
+            containerSize: containerSize,
+            safeAreaInsets: effectiveSafeAreaInsets,
+            chromeTopHeight: chromeTopHeight
+        )
+    }
+
+    var chromeBottomRect: CGRect {
+        BrowserContentViewportContract.chromeBottomRect(
+            containerSize: containerSize,
+            safeAreaInsets: effectiveSafeAreaInsets,
+            chromeBottomHeight: chromeBottomHeight,
+            keyboardLift: keyboardLift
+        )
+    }
+
+    var keyboardLiftRect: CGRect {
+        BrowserContentViewportContract.keyboardLiftRect(
+            containerSize: containerSize,
+            safeAreaInsets: effectiveSafeAreaInsets,
+            keyboardLift: keyboardLift
+        )
+    }
+
     /// Layout mode / orientation result from `BrowserLayoutResolver`.
     let layoutResolution: BrowserLayoutResolution
 
