@@ -344,7 +344,7 @@ PY
       echo "[repo-guard][ERROR] Layer: SafariLikeKit (UI/facade)" >&2
       echo "[repo-guard][ERROR] Fix: add a header comment immediately above it explaining why it is process-wide safe." >&2
       echo "[repo-guard][ERROR] Required marker: 'SAFE SINGLETON:' (or 'SINGLETON-SAFE:')" >&2
-      echo "[repo-guard][ERROR] Docs: ARCHITECTURE.md + singleton_inventory.md" >&2
+      echo "[repo-guard][ERROR] Docs: ARCHITECTURE.md + Docs/Audit/singleton_inventory.md" >&2
       did_fail=1
     fi
 

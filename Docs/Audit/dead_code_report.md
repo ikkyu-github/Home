@@ -94,7 +94,7 @@ These are not referenced by the Xcode project file and are not under any SwiftPM
 
 ### Docs duplication
 - Exact duplicates: none detected (hash-based scan across `**/*.md` yielded 0 duplicate groups).
-- Conceptual duplication: see `duplication_report.md` for active duplication candidates.
+- Conceptual duplication: see `Docs/Audit/duplication_report.md` for active duplication candidates.
 
 ## Scope & method (best-effort)
 This report is a conservative sweep aimed at PR-safe cleanup:
