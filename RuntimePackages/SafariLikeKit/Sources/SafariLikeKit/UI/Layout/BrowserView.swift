@@ -10,6 +10,7 @@ internal struct BrowserView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.isLayoutStabilizing) private var isLayoutStabilizing
     @Environment(\.uxPolicy) private var uxPolicy
+    @EnvironmentObject private var sceneMetrics: SceneMetrics
     @State private var pendingGeometrySize: CGSize? = nil
     @StateObject private var renderPolicy = RenderPolicyManager()
     /// Safe area insets from the root container
@@ -41,6 +42,22 @@ internal struct BrowserView: View {
             let chromeStyle: BrowserChromeStyle = (horizontalSizeClass == .compact && isLandscape == false)
                 ? .phonePortraitSafari
                 : .padLandscapeSafari
+
+            let snapshot = BrowserLayoutSnapshot(
+                containerSize: geo.size,
+                effectiveSafeAreaInsets: effectiveSafeAreaInsets,
+                stableInsets: sceneMetrics.stableInsets,
+                geometrySafeAreaInsets: geo.safeAreaInsets,
+                resolvedChromeStyle: chromeStyle,
+                chromeHeightLimits: (chromeStyle == .padLandscapeSafari)
+                    ? ChromeHeightLimits(
+                        min: SafariHeaderView.height(for: chromeStyle),
+                        max: SafariHeaderView.height(for: chromeStyle)
+                    )
+                    : nil,
+                keyboardLift: nil,
+                layoutResolution: resolution
+            )
             Group {
                 if horizontalSizeClass == .compact {
                     // Compact: keep the portrait vs landscape layout split.
@@ -48,9 +65,7 @@ internal struct BrowserView: View {
                         LandscapeBrowserLayout(
                             vm: vm,
                             configuration: configuration,
-                            chromeStyle: chromeStyle,
-                            containerSize: geo.size,
-                            safeAreaInsets: effectiveSafeAreaInsets,
+                            snapshot: snapshot,
                             browserRootWidth: browserRootWidth,
                             onSidebarSelect: onSidebarSelect
                         )
@@ -59,9 +74,7 @@ internal struct BrowserView: View {
                             vm: vm,
                             renderPolicy: renderPolicy,
                             configuration: configuration,
-                            safeAreaInsets: effectiveSafeAreaInsets,
-                            containerSize: geo.size,
-                            chromeStyle: chromeStyle,
+                            snapshot: snapshot,
                             onSidebarSelect: onSidebarSelect
                         )
                     }
@@ -70,16 +83,14 @@ internal struct BrowserView: View {
                     LandscapeBrowserLayout(
                         vm: vm,
                         configuration: configuration,
-                        chromeStyle: chromeStyle,
-                        containerSize: geo.size,
-                        safeAreaInsets: effectiveSafeAreaInsets,
+                        snapshot: snapshot,
                         browserRootWidth: browserRootWidth,
                         onSidebarSelect: onSidebarSelect
                     )
                 }
             }
             .overlay {
-                RelatedContainerView(vm: vm)
+                RelatedContainerView(vm: vm, snapshot: snapshot)
             }
             .overlay {
                 OverlayPane(
@@ -88,7 +99,7 @@ internal struct BrowserView: View {
                     tabOverviewProgress: tabOverviewTransition.presentationProgress,
                     tabOverviewPresentationProgress: tabOverviewTransition.presentationProgress,
                     isDraggingTabOverview: tabOverviewTransition.isDragging,
-                    insets: effectiveSafeAreaInsets,
+                    snapshot: snapshot,
                     configuration: configuration
                 )
             }

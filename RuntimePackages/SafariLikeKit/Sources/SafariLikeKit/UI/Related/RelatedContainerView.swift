@@ -6,9 +6,9 @@ import SafariLikeUXKit
 /// Centralized Related presenter driven only by `BrowserLayoutMode`.
 internal struct RelatedContainerView: View {
     @ObservedObject var vm: SplitBrowserViewModel
+    let snapshot: BrowserLayoutSnapshot
     @Environment(\.browserLayoutMode) private var layoutMode
     @EnvironmentObject private var relatedChrome: RelatedChromeState
-    @EnvironmentObject private var sceneMetrics: SceneMetrics
     private enum DrawerDetent: CaseIterable {
         case medium
         case large
@@ -27,8 +27,8 @@ internal struct RelatedContainerView: View {
     }
     private var phonePortraitOverlay: some View {
         GeometryReader { geo in
-            let insetsUI = (sceneMetrics.stableInsets != .zero) ? sceneMetrics.stableInsets : UIEdgeInsets.zero
-            let chromeHeight = SafariHeaderView.height(for: .phonePortraitSafari) + insetsUI.bottom
+            let insets = snapshot.effectiveSafeAreaInsets
+            let chromeHeight = SafariHeaderView.height(for: .phonePortraitSafari) + insets.bottom
             // Keep the bottom chrome area tappable; the scrim is still full-screen visually.
             let scrimExclusionHeight = chromeHeight
             // Reserve real space for bottom chrome instead of manual padding.

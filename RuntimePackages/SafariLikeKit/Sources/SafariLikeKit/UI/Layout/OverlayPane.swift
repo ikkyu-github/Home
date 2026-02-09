@@ -6,7 +6,7 @@ internal struct OverlayPane: View {
     let tabOverviewProgress: CGFloat
     let tabOverviewPresentationProgress: CGFloat
     let isDraggingTabOverview: Bool
-    let insets: EdgeInsets
+    let snapshot: BrowserLayoutSnapshot
     let configuration: SafariLikeConfiguration
     var body: some View {
         Group {

@@ -14,6 +14,8 @@ internal struct BrowserRootView: View {
     private let configuration: SafariLikeConfiguration
     private let makeSettingsView: (() -> AnyView)?
 
+    @EnvironmentObject private var sceneMetrics: SceneMetrics
+
     @StateObject private var tabOverviewTransition = TabOverviewTransitionController()
 
     init(
@@ -28,9 +30,16 @@ internal struct BrowserRootView: View {
         self.makeSettingsView = makeSettingsView
     }
     var body: some View {
+        let uiInsets = (sceneMetrics.stableInsets != .zero) ? sceneMetrics.stableInsets : sceneMetrics.safeAreaInsets
+        let insets = EdgeInsets(
+            top: uiInsets.top,
+            leading: uiInsets.left,
+            bottom: uiInsets.bottom,
+            trailing: uiInsets.right
+        )
         BrowserView(
             vm: viewModel,
-            safeAreaInsets: EdgeInsets(),
+            safeAreaInsets: insets,
             configuration: configuration,
             onSidebarSelect: { item in
                 viewModel.glue.handleSidebarSelect(item)

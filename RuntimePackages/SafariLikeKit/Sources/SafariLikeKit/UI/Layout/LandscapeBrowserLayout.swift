@@ -19,9 +19,7 @@ private struct SetChromeLimits: View {
 internal struct LandscapeBrowserLayout: View {
     @ObservedObject var vm: SplitBrowserViewModel
     let configuration: SafariLikeConfiguration
-    let chromeStyle: BrowserChromeStyle
-    let containerSize: CGSize
-    let safeAreaInsets: EdgeInsets
+    let snapshot: BrowserLayoutSnapshot
     let browserRootWidth: CGFloat
     let onSidebarSelect: (SidebarItem) -> Void
     @EnvironmentObject private var chrome: BrowserChromeState
@@ -32,6 +30,9 @@ internal struct LandscapeBrowserLayout: View {
         return vm.sessionStore.tabs.first(where: { $0.id == id })?.state
     }
     var body: some View {
+        let chromeStyle = snapshot.resolvedChromeStyle
+        let containerSize = snapshot.containerSize
+        let safeAreaInsets = snapshot.effectiveSafeAreaInsets
         let headerHeight = SafariHeaderView.height(for: chromeStyle)
         let shouldShowWebContent = vm.shouldShowWebContentForActiveTab
         let safeWidth: CGFloat = max(0, containerSize.width - safeAreaInsets.leading - safeAreaInsets.trailing)

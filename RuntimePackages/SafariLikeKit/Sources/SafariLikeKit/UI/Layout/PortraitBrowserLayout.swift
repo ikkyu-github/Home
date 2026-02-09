@@ -9,11 +9,7 @@ internal struct PortraitBrowserLayout: View {
     @EnvironmentObject private var relatedChrome: RelatedChromeState
     let renderPolicy: RenderPolicyManager
     let configuration: SafariLikeConfiguration
-    /// Safe area insets from the root container
-    let safeAreaInsets: EdgeInsets
-    /// Container size from the root GeometryReader
-    let containerSize: CGSize
-    let chromeStyle: BrowserChromeStyle
+    let snapshot: BrowserLayoutSnapshot
     let onSidebarSelect: (SidebarView.Item) -> Void
     private var activeTabState: BrowserTab.State? {
         let id = vm.activeTabID ?? vm.sessionStore.selectedTabID
@@ -21,6 +17,7 @@ internal struct PortraitBrowserLayout: View {
         return vm.sessionStore.tabs.first(where: { $0.id == id })?.state
     }
     var body: some View {
+        let safeAreaInsets = snapshot.effectiveSafeAreaInsets
         let shouldShowWebContent = vm.shouldShowWebContentForActiveTab
         TabRenderer(
             tabState: activeTabState,
