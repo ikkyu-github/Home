@@ -49,8 +49,9 @@ internal struct SplitBrowserRootView: View {
     public var body: some View { rootView }
 
     private var rootView: some View {
+        // Contract: WKWebView hosting containers must respect safe areas to preserve
+        // correct hit-testing and avoid unsafe underlap. See `Docs/WKWEBVIEW_LAYOUT_CONTRACT_SCAN.md`.
         sceneDrivenContent
-        .ignoresSafeArea()
         .environmentObject(chrome)
         .environmentObject(tabOverviewTransition)
         .sheet(isPresented: $chrome.isAppSettingsPresented) {
@@ -139,7 +140,6 @@ internal struct SplitBrowserRootView: View {
                 // Never animate lane geometry.
                 txn.animation = nil
             }
-            .ignoresSafeArea()
             .environment(\.isLayoutStabilizing, layoutStabilizer.isStabilizing)
     #if DEBUG
             .navigationPolicyOverlay()

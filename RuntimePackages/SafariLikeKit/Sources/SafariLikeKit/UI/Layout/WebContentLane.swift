@@ -12,8 +12,9 @@ internal struct WebContentLane: View {
     @State private var lastContextID: UUID?
 
     var body: some View {
+        // Contract: WKWebView hosting containers must respect safe areas to avoid
+        // ghost hit-test regions/underlap. See `Docs/WKWEBVIEW_LAYOUT_CONTRACT_SCAN.md`.
         BrowserPaneView(viewModel: vm, webContext: webContext)
-            .ignoresSafeArea(.all)
             .transaction { txn in
                 // Never animate the WebView lane.
                 txn.animation = nil
