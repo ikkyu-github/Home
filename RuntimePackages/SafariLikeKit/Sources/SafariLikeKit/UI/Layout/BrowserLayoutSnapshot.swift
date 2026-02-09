@@ -37,8 +37,22 @@ internal struct BrowserLayoutSnapshot {
     /// Layout mode / orientation result from `BrowserLayoutResolver`.
     let layoutResolution: BrowserLayoutResolution
 
+    /// 0...1 Tab Overview presentation progress for the current frame.
+    /// Owned by root transition controller; snapped into this per-frame snapshot.
+    let tabOverviewPresentationProgress: CGFloat
+
+    /// Tab Overview visibility state as of the current frame.
+    let isTabOverviewVisible: Bool
+
+    /// Whether Tab Overview is currently being dragged interactively.
+    let isDraggingTabOverview: Bool
+
     var isLandscape: Bool { layoutResolution.isLandscape }
     var safeWidth: CGFloat { layoutResolution.safeWidth }
+
+    var tabOverviewProgressClamped: CGFloat {
+        max(0, min(1, tabOverviewPresentationProgress))
+    }
 
     var stableEdgeInsets: EdgeInsets {
         EdgeInsets(

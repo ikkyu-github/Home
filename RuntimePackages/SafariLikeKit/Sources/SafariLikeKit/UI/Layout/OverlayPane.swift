@@ -3,16 +3,13 @@ import SafariLikeCoreKit
 internal struct OverlayPane: View {
     @ObservedObject var vm: SplitBrowserViewModel
     @ObservedObject var chrome: BrowserChromeState
-    let tabOverviewProgress: CGFloat
-    let tabOverviewPresentationProgress: CGFloat
-    let isDraggingTabOverview: Bool
     let snapshot: BrowserLayoutSnapshot
     let configuration: SafariLikeConfiguration
     var body: some View {
         TabOverviewOverlay(
             isVisible: $vm.isTabOverviewVisible,
-            progress: tabOverviewProgress,
-            isDragging: isDraggingTabOverview,
+            progress: snapshot.tabOverviewProgressClamped,
+            isDragging: snapshot.isDraggingTabOverview,
             tabs: vm.tabManager.tabs,
             tabGroups: vm.sessionStore.tabGroups,
             selectedTabID: vm.sessionStore.selectedTabID,

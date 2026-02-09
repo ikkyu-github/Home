@@ -56,7 +56,10 @@ internal struct BrowserView: View {
                     )
                     : nil,
                 keyboardLift: nil,
-                layoutResolution: resolution
+                layoutResolution: resolution,
+                tabOverviewPresentationProgress: tabOverviewTransition.presentationProgress,
+                isTabOverviewVisible: vm.isTabOverviewVisible,
+                isDraggingTabOverview: tabOverviewTransition.isDragging
             )
             Group {
                 if horizontalSizeClass == .compact {
@@ -93,9 +96,6 @@ internal struct BrowserView: View {
                 BrowserOverlayStack(
                     vm: vm,
                     chrome: chrome,
-                    tabOverviewProgress: tabOverviewTransition.presentationProgress,
-                    tabOverviewPresentationProgress: tabOverviewTransition.presentationProgress,
-                    isDraggingTabOverview: tabOverviewTransition.isDragging,
                     snapshot: snapshot,
                     configuration: configuration
                 )

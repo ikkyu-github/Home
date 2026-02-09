@@ -8,36 +8,34 @@ import SwiftUI
 internal struct BrowserOverlayStack: View {
     let vm: SplitBrowserViewModel
     let chrome: BrowserChromeState
-    let tabOverviewProgress: CGFloat
-    let tabOverviewPresentationProgress: CGFloat
-    let isDraggingTabOverview: Bool
     let snapshot: BrowserLayoutSnapshot
     let configuration: SafariLikeConfiguration
 
     @Environment(\.browserLayoutMode) private var layoutMode
     @EnvironmentObject private var relatedChrome: RelatedChromeState
 
-    private var isTabOverviewActive: Bool {
-        vm.isTabOverviewVisible || tabOverviewPresentationProgress > 0.001
+    private func isTabOverviewActive(_ snapshot: BrowserLayoutSnapshot) -> Bool {
+        snapshot.isTabOverviewVisible || snapshot.tabOverviewPresentationProgress > 0.001
     }
 
     // Keep this consistent with `TabOverviewOverlay`'s own hit-testing gate.
-    private var isTabOverviewHitTestingEnabled: Bool {
-        tabOverviewPresentationProgress > 0.1
-            || vm.isTabOverviewVisible
-            || isDraggingTabOverview
+    private func isTabOverviewHitTestingEnabled(_ snapshot: BrowserLayoutSnapshot) -> Bool {
+        snapshot.tabOverviewPresentationProgress > 0.1
+            || snapshot.isTabOverviewVisible
+            || snapshot.isDraggingTabOverview
     }
 
-    private var isRelatedActive: Bool {
+    private func isRelatedActive(layoutMode: BrowserLayoutMode, relatedChrome: RelatedChromeState, snapshot: BrowserLayoutSnapshot) -> Bool {
         // Policy: do not allow Related to compete with Tab Overview.
         // If both states are true transiently, Tab Overview wins.
         layoutMode == .phonePortrait
             && relatedChrome.isVisible
-            && isTabOverviewActive == false
+            && isTabOverviewActive(snapshot) == false
     }
 
-    private var isOverlayHitTestingEnabled: Bool {
-        isRelatedActive || isTabOverviewHitTestingEnabled
+    private func overlayHitTestingEnabled(layoutMode: BrowserLayoutMode, relatedChrome: RelatedChromeState, snapshot: BrowserLayoutSnapshot) -> Bool {
+        isRelatedActive(layoutMode: layoutMode, relatedChrome: relatedChrome, snapshot: snapshot)
+            || isTabOverviewHitTestingEnabled(snapshot)
     }
 
     var body: some View {
@@ -49,12 +47,12 @@ internal struct BrowserOverlayStack: View {
                 .zIndex(10)
         }
         // Pass-through unless an overlay is *visibly* interactive.
-        .allowsHitTesting(isOverlayHitTestingEnabled)
+        .allowsHitTesting(overlayHitTestingEnabled(layoutMode: layoutMode, relatedChrome: relatedChrome, snapshot: snapshot))
     }
 
     @ViewBuilder
     private var relatedOverlay: some View {
-        if isRelatedActive {
+        if isRelatedActive(layoutMode: layoutMode, relatedChrome: relatedChrome, snapshot: snapshot) {
             GeometryReader { geo in
                 let insets = snapshot.effectiveSafeAreaInsets
                 let chromeHeight = SafariHeaderView.height(for: .phonePortraitSafari) + insets.bottom
@@ -96,18 +94,15 @@ internal struct BrowserOverlayStack: View {
 
     @ViewBuilder
     private var tabOverviewOverlay: some View {
-        if isTabOverviewActive {
+        if isTabOverviewActive(snapshot) {
             OverlayPane(
                 vm: vm,
                 chrome: chrome,
-                tabOverviewProgress: tabOverviewProgress,
-                tabOverviewPresentationProgress: tabOverviewPresentationProgress,
-                isDraggingTabOverview: isDraggingTabOverview,
                 snapshot: snapshot,
                 configuration: configuration
             )
             // Avoid "transparent but still receiving touches".
-            .allowsHitTesting(isTabOverviewHitTestingEnabled)
+            .allowsHitTesting(isTabOverviewHitTestingEnabled(snapshot))
         }
     }
 }
