@@ -142,7 +142,7 @@ Root: `/Users/iphone15pro/Downloads/webOS`
   - App: typealias in App/Boot/CrashGuard.swift
   - SafariLikeKit: struct in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Runtime/Crash/CrashGuard.swift
 - `Diagnostics` defined in modules: Dev, SafariLikeCoreKit
-  - Dev: struct in Dev/Diagnostics/Diagnostics.swift
+  - CoreKit: struct in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Diagnostics/Diagnostics.swift
   - SafariLikeCoreKit: struct in RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Diagnostics/Diagnostics.swift
 - `Event` defined in modules: SafariLikeKit, SafariLikeUXKit
   - SafariLikeKit: enum in RuntimePackages/SafariLikeKit/Sources/SafariLikeKit/Metrics/Tracing/PerformanceTracer.swift

@@ -57,17 +57,15 @@ These are not referenced by the Xcode project file and are not under any SwiftPM
 
 ### Needs verification (delete or wire-in)
 
-#### Dev diagnostics implementation (duplicate but still referenced)
+#### Dev diagnostics implementation (duplicate, not wired to build)
 - File: `Dev/Diagnostics/Diagnostics.swift`
 - Evidence:
-  - Project file has **no** reference to `Diagnostics.swift` (search: `Diagnostics.swift`; result: 0 matches).
-  - Repo-wide reference check fails the “0 matches outside file” rule:
-    - `rg -n "com\.ikkyu\.webOS\." --glob "**/*.swift" --glob "!Dev/Diagnostics/Diagnostics.swift"` → 5 matches
-  - `public struct Diagnostics` has another canonical definition in CoreKit:
+  - Project file has **no** reference to `Dev/Diagnostics/Diagnostics.swift` (search: `Dev/Diagnostics/Diagnostics.swift`; result: 0 matches).
+  - SwiftPM manifests have **no** reference to `Dev/Diagnostics`.
+  - Canonical implementation exists in CoreKit:
     - `RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Diagnostics/Diagnostics.swift`
-- Verify:
-  - Inspect the 5 matches for `com\.ikkyu\.webOS\.`; if they are unrelated string constants, remove/refactor those first.
-  - Re-run the strict evidence check above; only delete once it becomes 0.
+- Action:
+  - Safe to delete `Dev/Diagnostics/Diagnostics.swift` (it is not part of any target).
 
 #### UI test sources not wired into the `webOSUITests` target
 - Files:

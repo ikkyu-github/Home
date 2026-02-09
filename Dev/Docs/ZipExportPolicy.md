@@ -23,7 +23,7 @@ This document defines how we export a runtime-only deliverable as `OS.zip`.
 
 These must not appear in `OS.zip`:
 
-- Any repo developer folders or sources: `Dev/**`, `**/*Tests/**`, `Dev/Docs/**`, `Dev/Diagnostics/**`.
+- Any repo developer folders or sources: `Dev/**`, `**/*Tests/**`, `Dev/Docs/**`.
 - Diagnostics/dev tooling accidentally copied into the app bundle.
 
 Note: the export process zips the built `.app` bundle, so these items should not be present unless the app build copies them into the bundle.
