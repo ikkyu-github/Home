@@ -14,6 +14,10 @@ internal struct BrowserView: View {
     @EnvironmentObject private var sceneMetrics: SceneMetrics
     @State private var pendingGeometrySize: CGSize? = nil
     @StateObject private var renderPolicy = RenderPolicyManager()
+#if DEBUG
+    @AppStorage("SafariLikeKit.debug.browserDebugVisualizerEnabled")
+    private var isBrowserDebugVisualizerEnabled: Bool = false
+#endif
     /// Safe area insets from the root container
     let safeAreaInsets: EdgeInsets
     /// Configuration for layout behavior
@@ -139,6 +143,13 @@ internal struct BrowserView: View {
                     configuration: configuration
                 )
             }
+#if DEBUG
+            .overlay {
+                if isBrowserDebugVisualizerEnabled {
+                    BrowserDebugVisualizer(snapshot: snapshot)
+                }
+            }
+#endif
             .animation(isLayoutStabilizing ? nil : .spring(response: 0.45, dampingFraction: 0.88), value: isLandscape)
             .observeAnimatableCGFloat(tabOverviewTransition.targetProgress) { value in
                 tabOverviewTransition.updatePresentationProgress(value)
