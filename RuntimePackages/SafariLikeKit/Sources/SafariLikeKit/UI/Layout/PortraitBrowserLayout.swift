@@ -35,19 +35,9 @@ internal struct PortraitBrowserLayout: View {
             }
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        // HARD RULES (WKWebView):
-        // - Do not overlay bottom chrome over the web canvas
-        // - Reserve real space using safeAreaInset so hit-testing is deterministic
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            VStack(spacing: 0) {
-                PortraitBottomBarContainer(vm: vm, chrome: chrome, relatedChrome: relatedChrome)
-
-                if snapshot.keyboardLift > 0 {
-                    Color.clear
-                        .frame(height: snapshot.keyboardLift)
-                        .allowsHitTesting(false)
-                }
-            }
+        .overlay(alignment: .bottom) {
+            PortraitBottomBarContainer(vm: vm, chrome: chrome, relatedChrome: relatedChrome)
+                .offset(y: -max(0, snapshot.effectiveSafeAreaInsets.bottom + snapshot.keyboardLift))
         }
         .overlay(alignment: .topLeading) {
             if vm.isSidebarVisible {
