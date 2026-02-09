@@ -54,12 +54,10 @@ internal struct BrowserOverlayStack: View {
     private var relatedOverlay: some View {
         if isRelatedActive(layoutMode: layoutMode, relatedChrome: relatedChrome, snapshot: snapshot) {
             GeometryReader { geo in
-                let insets = snapshot.effectiveSafeAreaInsets
-                let chromeHeight = SafariHeaderView.height(for: .phonePortraitSafari) + insets.bottom
                 // Keep the bottom chrome area tappable; the scrim is still full-screen visually.
-                let scrimExclusionHeight = chromeHeight
+                let scrimExclusionHeight = snapshot.chromeBottomHeight
                 // Reserve real space for bottom chrome instead of manual padding.
-                let reservedBottom: CGFloat = chromeHeight + 10
+                let reservedBottom: CGFloat = snapshot.chromeBottomHeight
 
                 let availableDrawerHeight = max(0, geo.size.height - reservedBottom)
                 let mediumHeight = min(availableDrawerHeight, max(260, availableDrawerHeight * 0.55))

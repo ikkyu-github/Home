@@ -33,7 +33,7 @@ internal struct LandscapeBrowserLayout: View {
         let chromeStyle = snapshot.resolvedChromeStyle
         let containerSize = snapshot.containerSize
         let safeAreaInsets = snapshot.effectiveSafeAreaInsets
-        let headerHeight = SafariHeaderView.height(for: chromeStyle)
+        let headerHeight = snapshot.chromeTopHeight
         let shouldShowWebContent = vm.shouldShowWebContentForActiveTab
         let safeWidth: CGFloat = max(0, containerSize.width - safeAreaInsets.leading - safeAreaInsets.trailing)
         #if DEBUG

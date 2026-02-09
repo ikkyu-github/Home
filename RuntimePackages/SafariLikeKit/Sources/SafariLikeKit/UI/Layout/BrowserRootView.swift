@@ -17,6 +17,7 @@ internal struct BrowserRootView: View {
     @EnvironmentObject private var sceneMetrics: SceneMetrics
 
     @StateObject private var tabOverviewTransition = TabOverviewTransitionController()
+    @StateObject private var keyboard = KeyboardHeightObserver()
 
     init(
         viewModel: SplitBrowserViewModel,
@@ -47,6 +48,7 @@ internal struct BrowserRootView: View {
         )
         .environmentObject(chrome)
         .environmentObject(tabOverviewTransition)
+        .environment(\.keyboardHeight, keyboard.height)
         .sheet(isPresented: $chrome.isAppSettingsPresented) {
             if let makeSettingsView {
                 makeSettingsView()

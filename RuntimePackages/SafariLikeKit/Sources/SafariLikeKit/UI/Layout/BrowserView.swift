@@ -7,6 +7,7 @@ internal struct BrowserView: View {
     @Environment(\.browserRuntime) private var runtime
     @EnvironmentObject private var chrome: BrowserChromeState
     @EnvironmentObject private var tabOverviewTransition: TabOverviewTransitionController
+    @Environment(\.keyboardHeight) private var keyboardHeight
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.isLayoutStabilizing) private var isLayoutStabilizing
     @Environment(\.uxPolicy) private var uxPolicy
@@ -43,6 +44,33 @@ internal struct BrowserView: View {
                 ? .phonePortraitSafari
                 : .padLandscapeSafari
 
+            let isURLBarFocused = vm.bar.addressBarViewState.isTextInputFocused
+            let keyboardLift = ChromeController.keyboardLift(
+                isURLBarFocused: isURLBarFocused,
+                keyboardHeight: keyboardHeight
+            )
+
+            let chromeTopHeight = SafariHeaderView.height(for: chromeStyle)
+
+            let chromeBottomHeight: CGFloat = {
+                guard chromeStyle == .phonePortraitSafari else { return 0 }
+                let barBaseHeight = isURLBarFocused
+                    ? PhonePortraitBottomBar.LayoutMetrics.expandedHeight
+                    : PhonePortraitBottomBar.LayoutMetrics.compactHeight
+                // Keep in sync with `PortraitBottomBarContainer` (divider + paddings).
+                let dividerHeight: CGFloat = 1
+                let topPadding: CGFloat = 8
+                let bottomPadding: CGFloat = 8
+                return dividerHeight + barBaseHeight + topPadding + bottomPadding + effectiveSafeAreaInsets.bottom
+            }()
+
+            let contentViewportInsets = EdgeInsets(
+                top: 0,
+                leading: effectiveSafeAreaInsets.leading,
+                bottom: chromeBottomHeight + keyboardLift,
+                trailing: effectiveSafeAreaInsets.trailing
+            )
+
             let snapshot = BrowserLayoutSnapshot(
                 containerSize: geo.size,
                 effectiveSafeAreaInsets: effectiveSafeAreaInsets,
@@ -55,7 +83,11 @@ internal struct BrowserView: View {
                         max: SafariHeaderView.height(for: chromeStyle)
                     )
                     : nil,
-                keyboardLift: nil,
+                keyboardLift: keyboardLift,
+                isURLBarFocused: isURLBarFocused,
+                chromeTopHeight: chromeTopHeight,
+                chromeBottomHeight: chromeBottomHeight,
+                contentViewportInsets: contentViewportInsets,
                 layoutResolution: resolution,
                 tabOverviewPresentationProgress: tabOverviewTransition.presentationProgress,
                 isTabOverviewVisible: vm.isTabOverviewVisible,

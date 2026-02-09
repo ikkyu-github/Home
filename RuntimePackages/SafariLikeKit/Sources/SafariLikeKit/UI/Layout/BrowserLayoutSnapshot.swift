@@ -31,8 +31,29 @@ internal struct BrowserLayoutSnapshot {
     /// Optional min/max chrome height constraints resolved from stable metrics.
     let chromeHeightLimits: ChromeHeightLimits?
 
-    /// Optional lift applied when keyboard is visible and policy requires it.
-    let keyboardLift: CGFloat?
+    /// Lift applied when keyboard is visible and policy requires it.
+    /// Single source of truth for all chrome/layout consumers.
+    let keyboardLift: CGFloat
+
+    /// Whether the URL bar is focused for the current frame.
+    let isURLBarFocused: Bool
+
+    /// Height of the top chrome (header) for this frame.
+    let chromeTopHeight: CGFloat
+
+    /// Height of the bottom chrome (phone portrait bottom bar) for this frame.
+    /// Excludes `keyboardLift`.
+    let chromeBottomHeight: CGFloat
+
+    /// Total height occupied at the bottom edge when including `keyboardLift`.
+    var chromeBottomOccupiedHeight: CGFloat { chromeBottomHeight + keyboardLift }
+
+    /// Total vertical space occupied by chrome + keyboard lift.
+    var chromeTotalOccupiedHeight: CGFloat { chromeTopHeight + chromeBottomOccupiedHeight }
+
+    /// Insets that define the interactive/content viewport for this frame.
+    /// Use this instead of re-deriving chrome + keyboard offsets in multiple layers.
+    let contentViewportInsets: EdgeInsets
 
     /// Layout mode / orientation result from `BrowserLayoutResolver`.
     let layoutResolution: BrowserLayoutResolution
