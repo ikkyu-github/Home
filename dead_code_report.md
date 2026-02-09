@@ -2,6 +2,102 @@
 
 Generated: 2026-02-03
 
+## Update: 2026-02-09 “Dead/Unused Sweep” (evidence-backed)
+
+### Safe to delete now
+These are not referenced by the Xcode project file and are not under any SwiftPM target root, and the repo-wide search indicates no call sites.
+
+#### Deleted in cleanup PR (2026-02-09)
+- `App/UI/Debug/NavigationPolicyOverlayView.swift`
+  - Evidence:
+    - `rg -n "existing code from NavigationPolicyOverlayView.swift" --glob "**/*.swift" --glob "!App/UI/Debug/NavigationPolicyOverlayView.swift"` → 0 matches
+    - `rg -n "NavigationPolicyOverlayView.swift" webOS.xcodeproj/project.pbxproj` → 0 matches
+- `App/UI/Debug/NetworkDiagnosticsView.swift`
+  - Evidence:
+    - `rg -n "existing code from NetworkDiagnosticsView.swift" --glob "**/*.swift" --glob "!App/UI/Debug/NetworkDiagnosticsView.swift"` → 0 matches
+    - `rg -n "NetworkDiagnosticsView.swift" webOS.xcodeproj/project.pbxproj` → 0 matches
+- `App/UI/Debug/PerformanceOverlayView.swift`
+  - Evidence:
+    - `rg -n "existing code from PerformanceOverlayView.swift" --glob "**/*.swift" --glob "!App/UI/Debug/PerformanceOverlayView.swift"` → 0 matches
+    - `rg -n "PerformanceOverlayView.swift" webOS.xcodeproj/project.pbxproj` → 0 matches
+- `App/UI/Debug/RuntimeMetrics.swift`
+  - Evidence:
+    - `rg -n "existing code from RuntimeMetrics.swift" --glob "**/*.swift" --glob "!App/UI/Debug/RuntimeMetrics.swift"` → 0 matches
+    - `rg -n "RuntimeMetrics.swift" webOS.xcodeproj/project.pbxproj` → 0 matches
+- `App/UI/Debug/SafariLikeParityReport.swift`
+  - Evidence:
+    - `rg -n "existing code from SafariLikeParityReport.swift" --glob "**/*.swift" --glob "!App/UI/Debug/SafariLikeParityReport.swift"` → 0 matches
+    - `rg -n "SafariLikeParityReport.swift" webOS.xcodeproj/project.pbxproj` → 0 matches
+- `Dev/Tools/_legacy/LegacyPluginManagerImpl.swift`
+  - Evidence:
+    - `rg -n "PluginManagerImpl|BrowserPluginManager" --glob "**/*.swift" --glob "!Dev/Tools/_legacy/LegacyPluginManagerImpl.swift"` → 0 matches
+    - `rg -n "LegacyPluginManagerImpl.swift" webOS.xcodeproj/project.pbxproj` → 0 matches
+
+#### App debug stubs (placeholders)
+- Files:
+  - `App/UI/Debug/NavigationPolicyOverlayView.swift`
+  - `App/UI/Debug/NetworkDiagnosticsView.swift`
+  - `App/UI/Debug/PerformanceOverlayView.swift`
+  - `App/UI/Debug/RuntimeMetrics.swift`
+  - `App/UI/Debug/SafariLikeParityReport.swift`
+- Evidence:
+  - These files contain only a `#if DEBUG` wrapper + placeholder comment (`...existing code from ...`).
+  - `webOS.xcodeproj/project.pbxproj` contains **no** references to these filenames (search: each basename; result: 0 matches).
+  - Repo search for the placeholder marker finds **only** these 5 files (search regex: `\.\.\.existing code from`; result: 5 matches).
+- Rationale:
+  - The real implementations exist under `RuntimePackages/SafariLikeKit/.../Diagnostics/` (same basenames), so these app-level stubs are redundant.
+
+#### Legacy plugin manager implementation (unused)
+- File: `Dev/Tools/_legacy/LegacyPluginManagerImpl.swift`
+- Evidence:
+  - Project file has **no** reference to `LegacyPluginManagerImpl.swift` (0 matches).
+  - Symbol search:
+    - `PluginManagerImpl` appears only in this file (search: `\bPluginManagerImpl\b`; result: 1 match).
+    - `BrowserPluginManager` appears only in this file (search: `\bBrowserPluginManager\b`; result: 2 matches including comment).
+
+### Needs verification (delete or wire-in)
+
+#### Dev diagnostics implementation (duplicate but still referenced)
+- File: `Dev/Diagnostics/Diagnostics.swift`
+- Evidence:
+  - Project file has **no** reference to `Diagnostics.swift` (search: `Diagnostics.swift`; result: 0 matches).
+  - Repo-wide reference check fails the “0 matches outside file” rule:
+    - `rg -n "com\.ikkyu\.webOS\." --glob "**/*.swift" --glob "!Dev/Diagnostics/Diagnostics.swift"` → 5 matches
+  - `public struct Diagnostics` has another canonical definition in CoreKit:
+    - `RuntimePackages/SafariLikeCoreKit/Sources/SafariLikeCoreKit/Diagnostics/Diagnostics.swift`
+- Verify:
+  - Inspect the 5 matches for `com\.ikkyu\.webOS\.`; if they are unrelated string constants, remove/refactor those first.
+  - Re-run the strict evidence check above; only delete once it becomes 0.
+
+#### UI test sources not wired into the `webOSUITests` target
+- Files:
+  - `webOSUITests/RotationRegressionUITests.swift`
+  - `webOSUITests/TabChromeUITests.swift`
+- Evidence:
+  - Xcode target + scheme exist (`xcodebuild -project webOS.xcodeproj -list` shows `webOSUITests`).
+  - But `webOS.xcodeproj/project.pbxproj` has **no** reference to either Swift file (search: each filename; result: 0 matches), implying the target currently builds with no test sources.
+  - Repo-wide symbol search:
+    - `RotationRegressionUITests` appears in its file + inventory docs only.
+    - `TabChromeUITests` appears only in its file.
+- Decision fork:
+  - If UITests are intended: add these files to the `webOSUITests` target membership (verify by running `xcodebuild -scheme webOSUITests test`).
+  - If UITests are not intended: delete these files and consider removing the `webOSUITests` target/scheme.
+
+### Symbols: likely unused (compiled) — needs verification
+
+#### `AppSettingsStore`
+- File: `App/AppSettingsStore.swift`
+- Evidence:
+  - Symbol search `\bAppSettingsStore\b` returns only the definition (1 match).
+  - The app appears to use `AppSettings` as the settings authority.
+- Verify:
+  - Repo-wide search for `AppSettingsStore` remains 0 matches outside its definition.
+  - Build `xcodebuild -scheme webOS build` (or the repo’s `xcodebuild` script task).
+
+### Docs duplication
+- Exact duplicates: none detected (hash-based scan across `**/*.md` yielded 0 duplicate groups).
+- Conceptual duplication: see `duplication_report.md` for active duplication candidates.
+
 ## Scope & method (best-effort)
 This report is a conservative sweep aimed at PR-safe cleanup:
 - Grep-based usage search (no whole-program analysis)

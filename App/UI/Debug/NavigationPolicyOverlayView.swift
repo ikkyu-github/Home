@@ -1,3 +1,0 @@
-#if DEBUG
-// ...existing code from NavigationPolicyOverlayView.swift...
-#endif

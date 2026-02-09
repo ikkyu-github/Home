@@ -1,3 +1,0 @@
-#if DEBUG
-// ...existing code from NetworkDiagnosticsView.swift...
-#endif

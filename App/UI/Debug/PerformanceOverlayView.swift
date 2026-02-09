@@ -1,3 +1,0 @@
-#if DEBUG
-// ...existing code from PerformanceOverlayView.swift...
-#endif
