@@ -19,21 +19,33 @@ internal struct PortraitBrowserLayout: View {
     var body: some View {
         let safeAreaInsets = snapshot.effectiveSafeAreaInsets
         let shouldShowWebContent = vm.shouldShowWebContentForActiveTab
-        TabRenderer(
-            tabState: activeTabState,
-            preferWebContent: shouldShowWebContent,
-            startPage: {
-                StartPageRenderer(vm: vm, relatedChrome: relatedChrome, safeAreaInsets: safeAreaInsets)
-            },
-            web: {
-                WebRenderer(vm: vm, webContext: vm.activeWebContextForRendering, renderPolicy: renderPolicy)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            },
-            empty: {
-                EmptyBrowserPane(onNewTab: { vm.newTab() })
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
+        let viewportRect = snapshot.contentViewportRect
+        let viewportLocalSafeAreaInsets = EdgeInsets(
+            top: 0,
+            leading: safeAreaInsets.leading,
+            bottom: 0,
+            trailing: safeAreaInsets.trailing
         )
+        ZStack(alignment: .topLeading) {
+            TabRenderer(
+                tabState: activeTabState,
+                preferWebContent: shouldShowWebContent,
+                startPage: {
+                    StartPageRenderer(vm: vm, relatedChrome: relatedChrome, safeAreaInsets: viewportLocalSafeAreaInsets)
+                },
+                web: {
+                    WebRenderer(vm: vm, webContext: vm.activeWebContextForRendering, renderPolicy: renderPolicy)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                },
+                empty: {
+                    EmptyBrowserPane(onNewTab: { vm.newTab() })
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            )
+            .frame(width: viewportRect.width, height: viewportRect.height)
+            .offset(x: viewportRect.minX, y: viewportRect.minY)
+            .clipped()
+        }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .overlay(alignment: .bottom) {
             PortraitBottomBarContainer(vm: vm, chrome: chrome, relatedChrome: relatedChrome)
