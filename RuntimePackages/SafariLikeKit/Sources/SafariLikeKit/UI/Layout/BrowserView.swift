@@ -90,10 +90,7 @@ internal struct BrowserView: View {
                 }
             }
             .overlay {
-                RelatedContainerView(vm: vm, snapshot: snapshot)
-            }
-            .overlay {
-                OverlayPane(
+                BrowserOverlayStack(
                     vm: vm,
                     chrome: chrome,
                     tabOverviewProgress: tabOverviewTransition.presentationProgress,
