@@ -37,9 +37,9 @@ final class WatchdogController {
         tasks[key] = nil
     }
     func cancelAll() {
-        for key in tasks.keys {
-            tasks[key]?.cancel()
-            tasks[key] = nil
+        for task in tasks.values {
+            task.cancel()
         }
+        tasks.removeAll()
     }
 }

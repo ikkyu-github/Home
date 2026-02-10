@@ -6,6 +6,15 @@ public struct LayoutEnvironmentKey: EnvironmentKey {
 public enum BrowserLayoutMode: Equatable {
     case phonePortrait
     case tabletLandscape
+
+    internal static func from(chromeStyle: BrowserChromeStyle) -> BrowserLayoutMode {
+        switch chromeStyle {
+        case .phonePortraitSafari:
+            return .phonePortrait
+        case .padLandscapeSafari:
+            return .tabletLandscape
+        }
+    }
     public var debugName: String {
         switch self {
         case .phonePortrait: return "phonePortrait"

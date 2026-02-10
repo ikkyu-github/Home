@@ -1,27 +1,44 @@
 import XCTest
 @testable import SafariLikeKit
 
+@MainActor
 final class TabManagerRegressionTests: XCTestCase {
-    func testOpenNewTabSelectsNewTab() {
-        let manager = TabManager()
-        let newTabID = manager.openNewTab()
-        XCTAssertEqual(manager.selectedTabID, newTabID)
+    private func makeSceneAndManager() -> (scene: SceneRuntimeContext, manager: TabManager) {
+        SceneFactory.makeKitScene(sceneIDRaw: "test.scene", windowID: "test.window")
     }
 
-    func testCloseTabSelectsNextTab() {
-        let manager = TabManager()
-        let tab1 = manager.openNewTab()
-        let tab2 = manager.openNewTab()
-        manager.closeTab(tab1)
-        XCTAssertEqual(manager.selectedTabID, tab2)
+    func testNewTabSelectsNewTab() async {
+        let (scene, manager) = makeSceneAndManager()
+        let newTabID = manager.newTab(inBackground: false)
+        XCTAssertEqual(manager.currentSessionStore.selectedTabID, newTabID)
+        XCTAssertEqual(manager.activeTabID, newTabID)
+
+        scene.shutdownAndReleaseWebViews()
+        await manager.shutdown()
     }
 
-    func testRapidTabSwitchingKeepsStateConsistent() {
-        let manager = TabManager()
-        let tabIDs = (0..<5).map { _ in manager.openNewTab() }
+    func testCloseSelectedTabFallsBackToFirstTab() async {
+        let (scene, manager) = makeSceneAndManager()
+        let tab1 = manager.newTab(inBackground: false)
+        let tab2 = manager.newTab(inBackground: false)
+        XCTAssertEqual(manager.currentSessionStore.selectedTabID, tab2)
+
+        await manager.closeTabAsync(tab2)
+        XCTAssertEqual(manager.currentSessionStore.selectedTabID, tab1)
+
+        scene.shutdownAndReleaseWebViews()
+        await manager.shutdown()
+    }
+
+    func testRapidTabSwitchingKeepsStateConsistent() async {
+        let (scene, manager) = makeSceneAndManager()
+        let tabIDs = (0..<5).map { _ in manager.newTab(inBackground: false) }
         for id in tabIDs.reversed() {
             manager.selectTab(id)
         }
-        XCTAssertEqual(manager.selectedTabID, tabIDs.first)
+        XCTAssertEqual(manager.currentSessionStore.selectedTabID, tabIDs.first)
+
+        scene.shutdownAndReleaseWebViews()
+        await manager.shutdown()
     }
 }

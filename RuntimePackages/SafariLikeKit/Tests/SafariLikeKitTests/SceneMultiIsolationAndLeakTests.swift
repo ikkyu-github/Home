@@ -6,9 +6,9 @@ import SafariLikeCoreKit
 @MainActor
 final class SceneMultiIsolationAndLeakTests: XCTestCase {
 
-    func testScenesDoNotShareServices() {
-        let (sceneA, _) = SceneFactory.makeKitScene(sceneIDRaw: "scene-A", windowID: "w-A")
-        let (sceneB, _) = SceneFactory.makeKitScene(sceneIDRaw: "scene-B", windowID: "w-B")
+    func testScenesDoNotShareServices() async {
+        let (sceneA, managerA) = SceneFactory.makeKitScene(sceneIDRaw: "scene-A", windowID: "w-A")
+        let (sceneB, managerB) = SceneFactory.makeKitScene(sceneIDRaw: "scene-B", windowID: "w-B")
 
         XCTAssertFalse(sceneA === sceneB)
         XCTAssertNotEqual(sceneA.windowID, sceneB.windowID)
@@ -25,11 +25,16 @@ final class SceneMultiIsolationAndLeakTests: XCTestCase {
         _ = sceneA.attachmentCoordinator
         _ = sceneB.attachmentCoordinator
         XCTAssertFalse(sceneA.attachmentCoordinator === sceneB.attachmentCoordinator)
+
+        sceneA.shutdownAndReleaseWebViews()
+        await managerA.shutdown()
+        sceneB.shutdownAndReleaseWebViews()
+        await managerB.shutdown()
     }
 
     func testTabsAndAssignmentsAreIsolated() async throws {
-        let (sceneA, _) = SceneFactory.makeKitScene(sceneIDRaw: "scene-A", windowID: "w-A")
-        let (sceneB, _) = SceneFactory.makeKitScene(sceneIDRaw: "scene-B", windowID: "w-B")
+        let (sceneA, managerA) = SceneFactory.makeKitScene(sceneIDRaw: "scene-A", windowID: "w-A")
+        let (sceneB, managerB) = SceneFactory.makeKitScene(sceneIDRaw: "scene-B", windowID: "w-B")
 
         let tabA = UUID(uuidString: "00000000-0000-0000-0000-000000001001")!
         let tabB = UUID(uuidString: "00000000-0000-0000-0000-000000001002")!
@@ -57,14 +62,23 @@ final class SceneMultiIsolationAndLeakTests: XCTestCase {
         XCTAssertFalse(sceneA.webViewPool.liveTabIDsSnapshot.contains(tabB))
         XCTAssertTrue(sceneB.webViewPool.liveTabIDsSnapshot.contains(tabB))
         XCTAssertFalse(sceneB.webViewPool.liveTabIDsSnapshot.contains(tabA))
+
+        sceneA.shutdownAndReleaseWebViews()
+        await managerA.shutdown()
+        sceneB.shutdownAndReleaseWebViews()
+        await managerB.shutdown()
     }
 
     func testTeardownReleasesSceneOwnedObjects() async throws {
         let sentinel = LeakSentinel()
 
-        let built = SceneFactory.makeKitScene(sceneIDRaw: "scene-leak", windowID: "w-leak")
-        var scene: SafariLikeKit.SceneRuntimeContext? = built.scene
-        var manager: TabManager? = built.manager
+        var scene: SafariLikeKit.SceneRuntimeContext?
+        var manager: TabManager?
+        do {
+            let built = SceneFactory.makeKitScene(sceneIDRaw: "scene-leak", windowID: "w-leak")
+            scene = built.scene
+            manager = built.manager
+        }
 
         // Force-create the attachment coordinator so we can verify it deallocates.
         _ = scene?.attachmentCoordinator
@@ -97,6 +111,8 @@ final class SceneMultiIsolationAndLeakTests: XCTestCase {
         if let windowID = scene?.windowID {
             webContextManager?.tearDownWindow(windowID: windowID)
         }
+
+        if let manager { await manager.shutdown() }
 
         // Drop all strong refs (including TabManager, which owns registries/pools).
         store = nil
