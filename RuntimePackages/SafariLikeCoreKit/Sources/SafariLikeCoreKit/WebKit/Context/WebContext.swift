@@ -19,7 +19,6 @@ public final class WebContext: ObservableObject {
     public let id: UUID
 
     public let privacyMode: WebPrivacyMode
-    public let processPool: WKProcessPool
     public let websiteDataStore: WKWebsiteDataStore
     public let contentController: WKUserContentController
     public let configuration: WKWebViewConfiguration
@@ -33,9 +32,6 @@ public final class WebContext: ObservableObject {
     ///
     /// WKWebView construction is intentionally delegated to `WebViewPool` to enforce
     /// budgeting and centralize ownership tracking.
-    ///
-    /// - Important: `configuration.processPool` will be overwritten with this context's pool
-    ///   to prevent accidental cross-pane sharing.
     public init(
         configuration: WKWebViewConfiguration,
         privacyMode: WebPrivacyMode,
@@ -45,7 +41,6 @@ public final class WebContext: ObservableObject {
         self.privacyMode = privacyMode
         self.configurationCustomizer = configurationCustomizer
 
-        self.processPool = WKProcessPool()
         self.contentController = configuration.userContentController
         self.configuration = configuration
 
@@ -60,7 +55,6 @@ public final class WebContext: ObservableObject {
         WebConfigurationProvider.shared.applyPrivacyMode(privacyMode, to: self.configuration)
         self.configuration.websiteDataStore = websiteDataStore
         self.configuration.userContentController = contentController
-        self.configuration.processPool = processPool
         configurationCustomizer?(self.configuration)
 
         // Do not create WKWebView here. It will be created lazily by WebViewPool.
