@@ -7,7 +7,7 @@ import SafariLikeCoreKit
 /// multi-window (e.g. iPhone) to map "window" actions to tab-level
 /// operations within the active session.
 @MainActor
-final class AppBrowserSessionRegistry: ObservableObject {
+final class AppBrowserSessionRegistry: @preconcurrency ObservableObject {
     let objectWillChange = ObservableObjectPublisher()
     private(set) weak var activeSession: BrowserSceneSession?
     init() {}

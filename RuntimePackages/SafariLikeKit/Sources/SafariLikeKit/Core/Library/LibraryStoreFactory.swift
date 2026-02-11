@@ -28,7 +28,7 @@ enum LibraryStoreFactory {
         let repo: any LibraryRepository = ProfiledLibraryRepository(
             regular: sqlite,
             privateRepo: privateRepo,
-            currentProfile: { profileBox.profile }
+            currentProfile: { @MainActor @Sendable in profileBox.profile }
         )
         shared = (repo: repo, profileBox: profileBox)
         return (repo, profileBox)

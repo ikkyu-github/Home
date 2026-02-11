@@ -4,6 +4,7 @@ import Foundation
 ///
 /// This is a cross-layer contract: storage implementations can live in a UI
 /// host, while core/runtime can depend on it without importing UI modules.
+@MainActor
 public protocol WebsitePreferencesProviding: AnyObject {
     func getPreferences(for domain: String) -> WebsitePreferences
     func setPreferences(_ preferences: WebsitePreferences, for domain: String)

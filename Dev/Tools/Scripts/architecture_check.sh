@@ -326,9 +326,11 @@ check_wkwebview_construction_sealed() {
     matches="$(
       rg -n --no-heading --color never --hidden --glob '!.git/**' --glob '!**/*.pbxproj' \
         --glob 'RuntimePackages/**/Sources/**/*.swift' \
-        --pcre2 '^\\s*(?!//).*\\bWKWebView(?:\\s*\\(|\\.init\\s*\\()' \
+        -e 'WKWebView[[:space:]]*\(' \
+        -e 'WKWebView\.init[[:space:]]*\(' \
         "$ROOT" \
-        | rg -v 'WebViewPool\\.swift:' \
+        | rg -v '(^|/)WebViewPool\.swift:' \
+        | grep -Ev '^[^:]+:[0-9]+:[[:space:]]*//' \
         || true
     )"
   else

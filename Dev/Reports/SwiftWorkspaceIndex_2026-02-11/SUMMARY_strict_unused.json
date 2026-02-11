@@ -1,0 +1,31 @@
+{
+  "mode": "MODE A (strict text-based; no USR index)",
+  "tools": {
+    "xcodebuild": "/usr/bin/xcodebuild",
+    "swift": "/usr/bin/swift",
+    "swiftc": "/usr/bin/swiftc",
+    "sourcekitten": "MISSING",
+    "sourcekit-lsp": "/usr/bin/sourcekit-lsp",
+    "swift-index": "MISSING",
+    "rg": "/opt/homebrew/bin/rg"
+  },
+  "inputs": {
+    "STEP2_per_file_summary.csv": "Dev/Reports/SwiftWorkspaceIndex_2026-02-11/STEP2_per_file_summary.csv",
+    "STEP4_overlap_dead_code_audit.md": "Dev/Reports/SwiftWorkspaceIndex_2026-02-11/STEP4_overlap_dead_code_audit.md"
+  },
+  "outputs": {
+    "STRICT_UNUSED_REPORT.md": "Dev/Reports/SwiftWorkspaceIndex_2026-02-11/STRICT_UNUSED_REPORT.md",
+    "STRICT_UNUSED_REPORT.csv": "Dev/Reports/SwiftWorkspaceIndex_2026-02-11/STRICT_UNUSED_REPORT.csv",
+    "DUPLICATE_SYMBOLS_REPORT.md": "Dev/Reports/SwiftWorkspaceIndex_2026-02-11/DUPLICATE_SYMBOLS_REPORT.md",
+    "DEAD_KEYS_REPORT.md": "Dev/Reports/SwiftWorkspaceIndex_2026-02-11/DEAD_KEYS_REPORT.md"
+  },
+  "counts": {
+    "candidates": 120,
+    "confirmed_unused": 100,
+    "used_only_in_tests": 0,
+    "public_surface": 18,
+    "reflective_risk": 1,
+    "tooling_limited": 1,
+    "duplicate_symbol_names": 69
+  }
+}

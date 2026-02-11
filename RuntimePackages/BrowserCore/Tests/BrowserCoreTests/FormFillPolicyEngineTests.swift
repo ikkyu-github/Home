@@ -2,8 +2,10 @@ import XCTest
 @testable import BrowserCore
 import SafariLikeContracts
 
+@MainActor
 final class FormFillPolicyEngineTests: XCTestCase {
 
+    @MainActor
     private final class InMemoryWebsitePreferencesStore: WebsitePreferencesProviding {
         private var byDomain: [String: WebsitePreferences] = [:]
 
