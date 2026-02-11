@@ -329,7 +329,7 @@ check_wkwebview_construction_sealed() {
         -e 'WKWebView[[:space:]]*\(' \
         -e 'WKWebView\.init[[:space:]]*\(' \
         "$ROOT" \
-        | rg -v 'WebViewPool\\.swift:' \
+        | rg -v '(^|/)WebViewPool\.swift:' \
         | grep -Ev '^[^:]+:[0-9]+:[[:space:]]*//' \
         || true
     )"
