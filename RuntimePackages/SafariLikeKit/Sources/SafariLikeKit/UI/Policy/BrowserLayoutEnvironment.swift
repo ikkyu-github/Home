@@ -1,8 +1,5 @@
 import SwiftUI
 import SafariLikeCoreKit
-public struct LayoutEnvironmentKey: EnvironmentKey {
-    public static let defaultValue: LayoutEnvironment = .compactSinglePane
-}
 public enum BrowserLayoutMode: Equatable {
     case phonePortrait
     case tabletLandscape
@@ -42,10 +39,5 @@ public extension EnvironmentValues {
     var browserLayoutMode: BrowserLayoutMode {
         get { self[BrowserLayoutModeKey.self] }
         set { self[BrowserLayoutModeKey.self] = newValue }
-    }
-    /// Runtime-driving layout environment (single-pane vs split-pane vs multi-window).
-    var layoutEnvironment: LayoutEnvironment {
-        get { self[LayoutEnvironmentKey.self] }
-        set { self[LayoutEnvironmentKey.self] = newValue }
     }
 }
