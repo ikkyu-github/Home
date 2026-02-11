@@ -28,7 +28,7 @@ internal struct SplitBrowserRootView: View {
     @State private var lastOrientation: BrowserOrientation?
 
     #if DEBUG
-    @State private var lastLoggedRelatedMode: RelatedPresentationMode? = nil
+    @State private var lastLoggedRelatedPolicy: RelatedPresentationPolicy? = nil
     #endif
 
     public init(
@@ -91,29 +91,34 @@ internal struct SplitBrowserRootView: View {
             let isLandscape = layoutResolution.isLandscape
             _ = layoutResolution.isSplit
             let chromeStyle: BrowserChromeStyle = isLandscape ? .padLandscapeSafari : .phonePortraitSafari
-            let isLandscapeForRelated = isLandscape
 
-            let relatedMode = RelatedPresentationPolicy.resolve(
-                hSize: horizontalSizeClass,
+            let layoutMode = BrowserLayoutMode.from(chromeStyle: chromeStyle)
+            let relatedPolicy = RelatedPresentationPolicy.resolve(
+                layoutMode: layoutMode,
                 isVisible: relatedChrome.isVisible,
-                isLandscape: isLandscapeForRelated,
-                containerSize: safeAdjustedSize
+                safeWidth: layoutResolution.safeWidth,
+                configuration: configuration
             )
+
+            let relatedWantsSidebar: Bool = {
+                if case .sidebar = relatedPolicy { return true }
+                return false
+            }()
 
             // Pane layout is decided once (single source of truth).
             let paneLayout = PaneLayoutResolver.resolve(
                 containerSize: safeAdjustedSize,
-                showRelatedRequested: (relatedMode == .sidePane && relatedChrome.isVisible),
+                showRelatedRequested: (relatedChrome.isVisible && relatedWantsSidebar),
                 maxRelatedWidth: 420
             )
 
             #if DEBUG
             DispatchQueue.main.async {
-                if lastLoggedRelatedMode != relatedMode {
+                if lastLoggedRelatedPolicy != relatedPolicy {
                     print(
-                        "[SplitBrowserRootView][Related][ModeChanged] from=\(String(describing: lastLoggedRelatedMode)) to=\(String(describing: relatedMode)) isVisible=\(relatedChrome.isVisible)"
+                        "[SplitBrowserRootView][Related][PolicyChanged] from=\(String(describing: lastLoggedRelatedPolicy)) to=\(String(describing: relatedPolicy)) isVisible=\(relatedChrome.isVisible)"
                     )
-                    lastLoggedRelatedMode = relatedMode
+                    lastLoggedRelatedPolicy = relatedPolicy
                 }
             }
             #endif
@@ -227,16 +232,22 @@ internal struct SplitBrowserRootView: View {
                 let sidebarWasVisible = vm.isSidebarVisible
                 guard isVisible else { return }
 
-                let mode = relatedMode
+                let layoutMode = BrowserLayoutMode.from(chromeStyle: chromeStyle)
+                let policy = RelatedPresentationPolicy.resolve(
+                    layoutMode: layoutMode,
+                    isVisible: isVisible,
+                    safeWidth: layoutResolution.safeWidth,
+                    configuration: configuration
+                )
                 #if DEBUG
                 print(
-                    "[SplitBrowserRootView][Related][Resolve] hSize=\(String(describing: horizontalSizeClass)) vSize=\(String(describing: verticalSizeClass)) isLandscape=\(isLandscapeForRelated) mode=\(String(describing: mode))"
+                    "[SplitBrowserRootView][Related][Resolve] hSize=\(String(describing: horizontalSizeClass)) vSize=\(String(describing: verticalSizeClass)) policy=\(String(describing: policy))"
                 )
                 #endif
 
                 // Overlay-only safety: guard against any unexpected coupling that flips Sidebar on when
                 // Related opens in overlay mode.
-                guard mode == .none else { return }
+                guard case .overlay = policy else { return }
 
                 DispatchQueue.main.async {
                     guard sidebarWasVisible == false else { return }
