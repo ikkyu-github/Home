@@ -109,8 +109,6 @@ final class SplitBrowserViewModel: ObservableObject {
     @Published private(set) var layoutEnvironment: LayoutEnvironment = .compactSinglePane
     @Published var didUserOverrideCompanionVisibility: Bool = false
     @Published var splitRatio: CGFloat = SplitBrowserConstants.defaultSplitRatio
-    @Published private var _companionPing = false
-    @Published var _relatedPulse = false
     @Published var relatedPresentation: RelatedPresentation = .hidden
     /// Portrait Related sheet height as a fraction of the available container height.
     /// This is bound to the draggable bottom sheet and persists across layout changes.
@@ -122,18 +120,6 @@ final class SplitBrowserViewModel: ObservableObject {
     /// Single source of truth for Related data.
     /// `companionItems` remains the storage; all Related UI should bind to this.
     var relatedItems: [SafariLikeCoreKit.CompanionItem] { companionItems }
-    private func enforceLandscapeSplitCompanionPaneStateIfNeeded() {
-        // Intentionally no-op.
-        // Related visibility is a first-class, intent-driven flag and must not
-        // implicitly mutate overview/spin/orientation/layout state.
-    }
-    func setLayoutEnvironment(_ newValue: LayoutEnvironment) {
-        guard layoutEnvironment != newValue else { return }
-        mutateAsync {
-            self.layoutEnvironment = newValue
-        }
-        tabManager.layoutEnvironment = newValue
-    }
     func setAutoCompanionEnabled(_ isEnabled: Bool) {
         mutateAsync {
             self.isAutoCompanionEnabled = isEnabled
