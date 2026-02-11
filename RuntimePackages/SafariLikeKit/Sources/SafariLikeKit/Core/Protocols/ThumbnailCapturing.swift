@@ -10,6 +10,7 @@ import SafariLikeCoreKit
 /// operations that depend on WKWebView. Core layers should depend only
 /// on TabThumbnailProviding, while SafariLikeKit UI/runtime code can
 /// use ThumbnailCapturing for full functionality.
+@MainActor
 public protocol ThumbnailCapturing: TabThumbnailProviding {
     func hasThumbnail(for tabID: UUID) -> Bool
     func capture(

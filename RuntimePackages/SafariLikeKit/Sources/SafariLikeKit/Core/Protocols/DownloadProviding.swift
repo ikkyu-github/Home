@@ -16,6 +16,7 @@ import SafariLikeContracts
 /// **Thread Safety:**
 /// Implementations should be @MainActor isolated for thread safety.
 /// Download management abstraction.
+@MainActor
 public protocol DownloadProviding: AnyObject {
     /// Currently available downloaded files, sorted by recency.
     /// Published for reactive updates.
