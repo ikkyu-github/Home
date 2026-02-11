@@ -390,16 +390,6 @@ internal struct SplitBrowserRootView: View {
         vm.notifyRootViewAppeared()
     }
 
-    // MARK: - 🔥 FIX จุดที่ทำให้ Sidebar "กดแล้วไม่เกิดอะไร"
-
-    private func handleSidebarSelection(
-        _ item: SidebarView.Item,
-        isLandscapeSplit: Bool
-    ) {
-        // ส่ง event ลง Glue ตรง ๆ
-        vm.glue.handleSidebarSelect(item)
-    }
-
     private func applyChromeStylePolicy(_ style: BrowserChromeStyle) {
         chrome.setChromeStyle(style)
 
