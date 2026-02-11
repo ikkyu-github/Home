@@ -13,10 +13,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install ripgrep
+        run: brew install ripgrep
+
       - name: Fetch PR base ref (for diff-based guards)
         if: github.event_name == 'pull_request'
         run: |
           git fetch origin "${{ github.base_ref }}":"refs/remotes/origin/${{ github.base_ref }}" --depth=1
+
       - name: Repo guard (no generated artifacts)
         run: |
           chmod +x Scripts/*.sh Dev/Tools/Scripts/*.sh .githooks/pre-commit || true
