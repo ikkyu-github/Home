@@ -42,12 +42,10 @@ public struct PrivacyReportEngine {
             sitesWithWebsiteDataCount = 0
         }
 
-        let contentBlockerExceptionsCount: Int = {
-            let prefs = deps.websitePreferencesStore.allPreferences()
-            // Semantics: a "custom" exception is explicitly disabling content blocking.
-            // WebsitePreferences defaults to enabled (Safari-like). Only count explicit disables.
-            return prefs.filter { $0.contentBlockerEnabled == false }.count
-        }()
+        let prefs = await MainActor.run { deps.websitePreferencesStore.allPreferences() }
+        // Semantics: a "custom" exception is explicitly disabling content blocking.
+        // WebsitePreferences defaults to enabled (Safari-like). Only count explicit disables.
+        let contentBlockerExceptionsCount = prefs.filter { $0.contentBlockerEnabled == false }.count
 
         let trackersBlockedCount: Int? = await deps.trackersBlockedCountProvider?(profile)
 

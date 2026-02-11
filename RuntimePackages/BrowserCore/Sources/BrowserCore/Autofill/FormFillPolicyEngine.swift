@@ -42,6 +42,7 @@ public struct FormFillPolicyEngine {
     /// - Passkeys on the web typically require JavaScript (WebAuthn), so `allowPasskeys`
     ///   is gated by per-site JavaScript preference.
     /// - Private profile never allows password saving prompts.
+    @MainActor
     public func effectivePolicy(siteKey: SiteKey, profile: WebsiteDataProfile) -> FormFillPolicy {
         let prefs = websitePreferencesStore?.getPreferences(for: siteKey.storageKey)
             ?? WebsitePreferences.defaults(for: siteKey.storageKey)
