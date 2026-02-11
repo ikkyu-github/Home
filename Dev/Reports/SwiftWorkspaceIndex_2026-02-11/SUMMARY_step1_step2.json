@@ -1,0 +1,11 @@
+{
+  "swift_file_count": 705,
+  "todo_fixme_count": 22,
+  "shared_state_ref_count": 323,
+  "artifacts": {
+    "STEP1_file_inventory_GROUPED.md": "Dev/Reports/SwiftWorkspaceIndex_2026-02-11/STEP1_file_inventory_GROUPED.md",
+    "STEP2_per_file_summary.csv": "Dev/Reports/SwiftWorkspaceIndex_2026-02-11/STEP2_per_file_summary.csv",
+    "STEP2_todos_fixmes.md": "Dev/Reports/SwiftWorkspaceIndex_2026-02-11/STEP2_todos_fixmes.md",
+    "STEP2_shared_state_refs.md": "Dev/Reports/SwiftWorkspaceIndex_2026-02-11/STEP2_shared_state_refs.md"
+  }
+}

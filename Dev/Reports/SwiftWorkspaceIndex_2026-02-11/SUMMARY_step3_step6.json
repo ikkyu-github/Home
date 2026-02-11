@@ -1,0 +1,14 @@
+{
+  "artifacts": {
+    "STEP3_cross_reference_maps_A-E.md": "Dev/Reports/SwiftWorkspaceIndex_2026-02-11/STEP3_cross_reference_maps_A-E.md",
+    "STEP4_overlap_dead_code_audit.md": "Dev/Reports/SwiftWorkspaceIndex_2026-02-11/STEP4_overlap_dead_code_audit.md",
+    "STEP5_incomplete_features_report.md": "Dev/Reports/SwiftWorkspaceIndex_2026-02-11/STEP5_incomplete_features_report.md",
+    "STEP6_refactor_roadmap_PR_plan.md": "Dev/Reports/SwiftWorkspaceIndex_2026-02-11/STEP6_refactor_roadmap_PR_plan.md"
+  },
+  "counts": {
+    "types_defined": 1135,
+    "potentially_unused_types": 120,
+    "todo_fixme": 22,
+    "parity_mentions_in_code": 11
+  }
+}
