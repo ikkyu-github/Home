@@ -142,6 +142,8 @@ private extension AddressBarEvent {
         case .submit, .submitAndDismissEditing, .cancelEditing:
             // Handled explicitly by `AddressBarFeature.reduce`.
             return .tapOutside
+        @unknown default:
+            return .tapOutside
         }
     }
 }
