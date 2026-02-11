@@ -11,6 +11,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install ripgrep
+        run: brew install ripgrep
+
       - name: Build (fail on warnings)
         run: |
           chmod +x Scripts/*.sh Dev/Tools/Scripts/*.sh || true
