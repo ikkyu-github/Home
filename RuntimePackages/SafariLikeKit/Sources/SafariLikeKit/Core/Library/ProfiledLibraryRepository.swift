@@ -3,11 +3,11 @@ import SafariLikeCoreKit
 public struct ProfiledLibraryRepository: LibraryRepository {
     private let regular: any LibraryRepository
     private let privateRepo: any LibraryRepository
-    private let currentProfile: @MainActor () -> BrowsingProfile
+    private let currentProfile: @Sendable @MainActor () -> BrowsingProfile
     public init(
         regular: any LibraryRepository,
         privateRepo: any LibraryRepository,
-        currentProfile: @escaping @MainActor () -> BrowsingProfile
+        currentProfile: @escaping @Sendable @MainActor () -> BrowsingProfile
     ) {
         self.regular = regular
         self.privateRepo = privateRepo
